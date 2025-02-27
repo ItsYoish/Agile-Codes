@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bowser Management - Emergency Water Bowser System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="main">
+            <div class="logo">
+                <img src="logo.png" alt="Company Logo">
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="services.html">Water Services</a></li>
+                    <li><a href="partners.html">Utility Partners</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                    <li><a href="logout.html">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section id="bowser-management">
+        <h2>Bowser Management</h2>
+        <p>Manage the deployment, tracking, and maintenance of emergency water bowsers.</p>
+        
+        <div class="management-container">
+            <div class="management-item">
+                <h3>Add New Bowser</h3>
+                <form id="add-bowser-form">
+                    <label for="bowser-id">Bowser ID:</label>
+                    <input type="text" id="bowser-id" name="bowser-id" required>
+
+                    <label for="location">Location:</label>
+                    <input type="text" id="location" name="location" required>
+
+                    <label for="capacity">Capacity (Litres):</label>
+                    <input type="number" id="capacity" name="capacity" required>
+
+                    <label for="status">Status:</label>
+                    <select id="status" name="status">
+                        <option value="Deployed">Deployed</option>
+                        <option value="In Maintenance">In Maintenance</option>
+                        <option value="Available">Available</option>
+                    </select>
+
+                    <button type="submit">Add Bowser</button>
+                </form>
+            </div>
+            
+            <div class="management-item">
+                <h3>View Existing Bowsers</h3>
+                <p>Check the details of currently deployed and available bowsers.</p>
+                <button onclick="viewBowsers()">View Bowsers</button>
+                <div id="bowser-list"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 Emergency Water Management System | Designed by Your Team</p>
+    </footer>
+</body>
+</html>

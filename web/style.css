@@ -1,0 +1,451 @@
+/* General Styling */
+#index {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Header Styling */
+header {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('image2.jpg');
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    background-blend-mode: lighten
+    
+}
+
+.main {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+}
+
+.logo img {
+    width: 100px;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+}
+
+nav ul li {
+    margin: 0 15px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: white;
+    padding: 10px;
+    transition: 0.3s;
+}
+
+nav ul li a:hover {
+    background: white;
+    color: black;
+    border-radius: 5px;
+}
+
+/* Title Section */
+.title h1 {
+    font-size: 50px;
+}
+
+.button .btn {
+    display: inline-block;
+    margin: 10px;
+    padding: 10px 20px;
+    border: 1px solid white;
+    color: white;
+    text-decoration: none;
+    transition: 0.3s;
+}
+
+.button .btn:hover {
+    background: white;
+    color: black;
+}
+
+/* Sections */
+section {
+    padding: 50px;
+    text-align: center;
+}
+
+/* Footer */
+footer {
+    background: black;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Login Form */
+#login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80vh;
+}
+
+
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 300px;
+    padding: 20px;
+    background: #f4f4f4;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    width: 100%;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.form-group label {
+    display: block;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+/* Dashboard Styling */
+#dashboard {
+    background-color: #f4f4f4;
+    padding: 20px;
+}
+
+.dashboard-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+.dashboard-item {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    text-align: center;
+}
+
+.dashboard-item h3 {
+    margin-bottom: 10px;
+}
+
+.dashboard-item button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.dashboard-item button:hover {
+    background: #0056b3;
+}
+
+/* Bowser Management Styling */
+#bowser-management {
+    background-color: #f9f9f9; /* Lighter background for better contrast */
+    padding: 50px 20px;
+    text-align: center;
+}
+
+.management-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Makes the items responsive */
+    gap: 30px;
+    justify-content: center;
+    max-width: 1200px; /* Limiting the width of the container */
+    margin: 0 auto;
+}
+
+.management-item {
+    background: #fff;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: all 0.3s ease-in-out;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.management-item:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); /* Subtle hover effect */
+}
+
+.management-item h3 {
+    margin-bottom: 15px;
+    color: #333; /* Darker color for the title */
+}
+
+.management-item form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.management-item label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 15px;
+    text-align: left;
+    color: #333;
+}
+
+.management-item input, .management-item select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.management-item input:focus, .management-item select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.management-item button {
+    margin-top: 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+.management-item button:hover {
+    background: #0056b3;
+}
+
+#bowser-list {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Notifications Page Styling */
+#notifications {
+    background-color: #f9f9f9;
+    padding: 50px 20px;
+    text-align: center;
+}
+
+.notifications-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.notification-item {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    text-align: left;
+    border-left: 5px solid #007bff;
+    transition: transform 0.3s ease-in-out;
+}
+
+.notification-item:hover {
+    transform: scale(1.02);
+}
+
+.notification-item h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.notification-item p {
+    color: #555;
+    font-size: 16px;
+}
+
+.notification-item .time {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #777;
+}
+/* Notifications Page Styling */
+#notifications {
+    background-color: #f9f9f9;
+    padding: 50px 20px;
+    text-align: center;
+}
+
+.notifications-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.notification-item {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    text-align: left;
+    border-left: 5px solid #007bff;
+    transition: transform 0.3s ease-in-out;
+}
+
+.notification-item:hover {
+    transform: scale(1.02);
+}
+
+.notification-item h3 {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.notification-item p {
+    color: #555;
+    font-size: 16px;
+}
+
+.notification-item .time {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #777;
+}
+
+
+/* Register Page Styling */
+#register-page {
+    background: url('register-bg.jpg') no-repeat center center/cover;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+#register {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    margin: auto;
+}
+
+#register h2 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+#register p {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+#register-form {
+    display: flex;
+    flex-direction: column;
+}
+
+#register-form label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+    text-align: left;
+    color: #333;
+}
+
+#register-form input, #register-form select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+#register-form input:focus, #register-form select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+#register-form button {
+    margin-top: 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+#register-form button:hover {
+    background: #0056b3;
+}

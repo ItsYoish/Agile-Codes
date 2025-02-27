@@ -3,67 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bowser Management - Emergency Water Bowser System</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Bowser Management - AquaAlert</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/management.css">
 </head>
 <body>
-    <header>
-        <div class="main">
-            <div class="logo">
-                <img src="logo.png" alt="Company Logo">
-            </div>
-            <nav>
-                <ul>
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="dashboard.html">Dashboard</a></li>
-                    <li><a href="services.html">Water Services</a></li>
-                    <li><a href="partners.html">Utility Partners</a></li>
-                    <li><a href="contact.html">Contact</a></li>
-                    <li><a href="logout.html">Logout</a></li>
-                </ul>
-            </nav>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-water fa-lg"></i>
+            <span>AquaAlert</span>
         </div>
-    </header>
+        <div class="nav-links">
+            <a href="index.html">Dashboard</a>
+            <a href="management.html" class="active">Bowser Management</a>
+            <a href="locations.html">Locations</a>
+            <a href="maintenance.html">Maintenance</a>
+            <a href="reports.html">Reports</a>
+        </div>
+    </nav>
 
-    <section id="bowser-management">
-        <h2>Bowser Management</h2>
-        <p>Manage the deployment, tracking, and maintenance of emergency water bowsers.</p>
+    <main class="management-container">
+        <h1>Bowser Fleet Management</h1>
         
-        <div class="management-container">
-            <div class="management-item">
-                <h3>Add New Bowser</h3>
-                <form id="add-bowser-form">
-                    <label for="bowser-id">Bowser ID:</label>
-                    <input type="text" id="bowser-id" name="bowser-id" required>
+        <div class="action-bar">
+            <div class="search-container">
+                <input type="text" id="searchBowser" placeholder="Search bowsers...">
+                <button class="search-btn"><i class="fas fa-search"></i></button>
+            </div>
+            <div class="filters">
+                <select id="statusFilter">
+                    <option value="all">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="outOfService">Out of Service</option>
+                    <option value="lowSupply">Low Supply</option>
+                    <option value="available">Available</option>
+                </select>
+                <select id="capacityFilter">
+                    <option value="all">All Capacities</option>
+                    <option value="1000">1,000 L</option>
+                    <option value="2000">2,000 L</option>
+                    <option value="5000">5,000 L</option>
+                    <option value="10000">10,000 L</option>
+                </select>
+            </div>
+            <button id="addBowserBtn" class="primary-btn">
+                <i class="fas fa-plus"></i> Add Bowser
+            </button>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="all">All Bowsers</button>
+            <button class="tab-btn" data-tab="deployed">Deployed</button>
+            <button class="tab-btn" data-tab="available">Available</button>
+            <button class="tab-btn" data-tab="maintenance">Maintenance</button>
+        </div>
 
-                    <label for="location">Location:</label>
-                    <input type="text" id="location" name="location" required>
+        <div class="bowser-grid" id="bowserGrid">
+            <!-- Grid will be populated by JavaScript -->
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading bowsers...
+            </div>
+        </div>
+    </main>
 
-                    <label for="capacity">Capacity (Litres):</label>
-                    <input type="number" id="capacity" name="capacity" required>
-
-                    <label for="status">Status:</label>
-                    <select id="status" name="status">
-                        <option value="Deployed">Deployed</option>
-                        <option value="In Maintenance">In Maintenance</option>
-                        <option value="Available">Available</option>
-                    </select>
-
-                    <button type="submit">Add Bowser</button>
+    <!-- Add Bowser Modal -->
+    <div id="addBowserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Bowser</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="addBowserForm">
+                    <div class="form-group">
+                        <label for="bowserNumber">Bowser Number</label>
+                        <input type="text" id="bowserNumber" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bowserCapacity">Capacity (Liters)</label>
+                        <select id="bowserCapacity" required>
+                            <option value="1000">1,000 L</option>
+                            <option value="2000">2,000 L</option>
+                            <option value="5000">5,000 L</option>
+                            <option value="10000">10,000 L</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bowserOwner">Owner</label>
+                        <input type="text" id="bowserOwner" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="bowserStatus">Status</label>
+                        <select id="bowserStatus" required>
+                            <option value="available">Available</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="outOfService">Out of Service</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bowserNotes">Notes</label>
+                        <textarea id="bowserNotes" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="secondary-btn cancel-btn">Cancel</button>
+                        <button type="submit" class="primary-btn">Add Bowser</button>
+                    </div>
                 </form>
             </div>
-            
-            <div class="management-item">
-                <h3>View Existing Bowsers</h3>
-                <p>Check the details of currently deployed and available bowsers.</p>
-                <button onclick="viewBowsers()">View Bowsers</button>
-                <div id="bowser-list"></div>
+        </div>
+    </div>
+
+    <!-- Bowser Details Modal -->
+    <div id="bowserDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Bowser Details</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body" id="bowserDetailsContent">
+                <!-- Content will be populated by JavaScript -->
             </div>
         </div>
-    </section>
+    </div>
 
-    <footer>
-        <p>&copy; 2025 Emergency Water Management System | Designed by Your Team</p>
-    </footer>
+    <div id="notification" class="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/management.js"></script>
 </body>
 </html>

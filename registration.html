@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - AquaAlert</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body id="register-page">
+    <header>
+        <div class="main">
+            <div class="logo">
+               
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="login.html">Login</a></li>
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section id="register">
+        <h2>Register</h2>
+        <p>Create an account to access the AquaAlert Management System.</p>
+        <form id="register-form">
+            <label for="full-name">Full Name:</label>
+            <input type="text" id="full-name" name="full-name" required>
+            
+            <label for="email">Email Address:</label>
+            <input type="email" id="email" name="email" required>
+            
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            
+            <label for="confirm-password">Confirm Password:</label>
+            <input type="password" id="confirm-password" name="confirm-password" required>
+            
+            
+            
+            <button type="submit">Register</button>
+        </form>
+        <p>Already have an account? <a href="LoginPage.html">Login here</a></p>
+    </section>
+    <style>
+        #register-page {
+   
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+#register {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    margin: auto;
+}
+
+#register h2 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+#register p {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+#register-form {
+    display: flex;
+    flex-direction: column;
+}
+
+#register-form label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+    text-align: left;
+    color: #333;
+}
+
+#register-form input, #register-form select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+#register-form input:focus, #register-form select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+#register-form button {
+    margin-top: 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+#register-form button:hover {
+    background: #0056b3;
+}
+
+        </style>
+
+    <footer>
+        <p>&copy; 2025 Emergency Water Management System | Designed by Your Team</p>
+    </footer>
+</body>
+</html>

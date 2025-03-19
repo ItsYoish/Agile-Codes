@@ -14,11 +14,8 @@ class Dashboard {
     /**
      * Initialize the dashboard
      */
-    async initialize() {
+    initialize() {
         try {
-            // Load data
-            await dataManager.loadMockData();
-            
             // Initialize map
             this.initializeMap();
             
@@ -32,10 +29,10 @@ class Dashboard {
             this.setupRefreshIntervals();
             
             // Show welcome notification
-            Utils.showNotification('Dashboard loaded successfully', 'success');
+            this.showNotification('Dashboard loaded successfully', 'success');
         } catch (error) {
             console.error('Dashboard initialization error:', error);
-            Utils.showNotification('Error loading dashboard data', 'danger');
+            this.showNotification('Error loading dashboard data', 'danger');
         }
     }
     
@@ -44,11 +41,11 @@ class Dashboard {
      */
     initializeMap() {
         // Create map
-        this.map = L.map('map').setView(CONFIG.map.defaultCenter, CONFIG.map.defaultZoom);
+        this.map = L.map('map').setView([51.5074, -0.1278], 13);
         
         // Add tile layer
-        L.tileLayer(CONFIG.map.tileLayer, {
-            attribution: CONFIG.map.attribution
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: ' OpenStreetMap contributors'
         }).addTo(this.map);
         
         // Add deployment markers
@@ -60,7 +57,9 @@ class Dashboard {
      */
     updateMapMarkers() {
         // Clear existing markers
-        this.markers.forEach(marker => marker.remove());
+        if (this.markers) {
+            this.markers.forEach(marker => marker.remove());
+        }
         this.markers = [];
         
         // Get active deployments
@@ -68,9 +67,12 @@ class Dashboard {
         
         // Add markers for each deployment
         deployments.forEach(deployment => {
-            if (deployment.location && deployment.location.coordinates) {
+            const location = dataManager.getLocationById(deployment.locationId);
+            const bowser = dataManager.getBowserById(deployment.bowserId);
+            
+            if (location && location.coordinates) {
                 // Create marker with custom color based on status
-                const markerColor = this.getMarkerColorForStatus(deployment.bowser.status);
+                const markerColor = this.getMarkerColorForStatus(bowser.status);
                 const markerIcon = L.divIcon({
                     className: 'custom-marker',
                     html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`,
@@ -81,17 +83,17 @@ class Dashboard {
                 // Create popup content
                 const popupContent = `
                     <div class="map-popup">
-                        <h3>${deployment.location.name}</h3>
-                        <p><strong>Bowser:</strong> ${deployment.bowser.number}</p>
-                        <p><strong>Capacity:</strong> ${deployment.bowser.capacity} L</p>
+                        <h3>${location.name}</h3>
+                        <p><strong>Bowser:</strong> ${bowser.number}</p>
+                        <p><strong>Capacity:</strong> ${bowser.capacity} L</p>
                         <p><strong>Current Level:</strong> ${deployment.supplyLevel}%</p>
-                        <p><strong>Status:</strong> ${deployment.bowser.status}</p>
-                        <p><strong>Deployed:</strong> ${Utils.formatDate(deployment.startDate)}</p>
+                        <p><strong>Status:</strong> ${bowser.status}</p>
+                        <p><strong>Deployed:</strong> ${this.formatDate(deployment.startTime)}</p>
                     </div>
                 `;
                 
                 // Create marker and add to map
-                const marker = L.marker(deployment.location.coordinates, { icon: markerIcon })
+                const marker = L.marker([location.coordinates.lat, location.coordinates.lng], { icon: markerIcon })
                     .bindPopup(popupContent);
                 
                 marker.addTo(this.map);
@@ -101,7 +103,7 @@ class Dashboard {
         
         // If no deployments, show default view
         if (deployments.length === 0) {
-            this.map.setView(CONFIG.map.defaultCenter, CONFIG.map.defaultZoom);
+            this.map.setView([51.5074, -0.1278], 13);
         } 
         // Otherwise, fit map to show all markers
         else if (this.markers.length > 0) {
@@ -116,7 +118,13 @@ class Dashboard {
      * @returns {string} Color code
      */
     getMarkerColorForStatus(status) {
-        return CONFIG.statusColors[status] || '#3182ce'; // Default to blue
+        const statusColors = {
+            'deployed': '#28a745',
+            'maintenance': '#ffc107',
+            'standby': '#17a2b8',
+            'decommissioned': '#dc3545'
+        };
+        return statusColors[status] || '#3182ce'; // Default to blue
     }
     
     /**
@@ -198,127 +206,206 @@ class Dashboard {
      */
     generateHistoricalEfficiency() {
         // Current efficiency
-        const currentEfficiency = dataManager.calculateEfficiency();
+        const currentEfficiency = this.calculateEfficiency();
         
-        // Generate random historical data (slightly variable)
-        const baseEfficiency = 80;
-        const variance = 10;
-        
-        return [
-            baseEfficiency + Math.floor(Math.random() * variance - variance/2),
-            baseEfficiency + Math.floor(Math.random() * variance - variance/2),
-            baseEfficiency + Math.floor(Math.random() * variance - variance/2),
-            baseEfficiency + Math.floor(Math.random() * variance - variance/2),
-            baseEfficiency + Math.floor(Math.random() * variance - variance/2),
-            baseEfficiency + Math.floor(Math.random() * variance - variance/2),
-            currentEfficiency
-        ];
-    }
-    
-    /**
-     * Update quick stats section
-     */
-    updateQuickStats() {
-        // Get stats data
-        const activeBowsers = dataManager.getActiveBowsersCount();
-        const totalLocations = dataManager.getLocationsCount();
-        const pendingMaintenance = dataManager.getPendingMaintenanceCount();
-        const efficiency = dataManager.calculateEfficiency();
-        
-        // Update DOM elements
-        document.getElementById('activeBowsers').textContent = Utils.formatNumber(activeBowsers);
-        document.getElementById('totalLocations').textContent = Utils.formatNumber(totalLocations);
-        document.getElementById('pendingMaintenance').textContent = Utils.formatNumber(pendingMaintenance);
-        document.getElementById('efficiency').textContent = `${efficiency}%`;
-    }
-    
-    /**
-     * Update alerts list
-     */
-    updateAlertsList() {
-        const alertsList = document.getElementById('alertsList');
-        if (!alertsList) return;
-        
-        // Get recent alerts
-        const alerts = dataManager.getRecentAlerts(5);
-        
-        // Update list
-        if (alerts.length > 0) {
-            alertsList.innerHTML = alerts.map(alert => `
-                <div class="list-item">
-                    <div>
-                        ${Utils.createStatusBadge(alert.type, alert.priority)}
-                        <span>${alert.message}</span>
-                    </div>
-                    <small>${Utils.getTimeDifference(alert.timestamp)}</small>
-                </div>
-            `).join('');
-        } else {
-            alertsList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-bell-slash"></i>
-                    <p>No recent alerts</p>
-                </div>
-            `;
+        // Historical values (randomly fluctuating around current)
+        const history = [];
+        for (let i = 0; i < 6; i++) {
+            const deviation = Math.random() * 10 - 5; // -5 to +5
+            const value = Math.max(70, Math.min(98, currentEfficiency + deviation));
+            history.push(Math.round(value));
         }
+        
+        // Add current value and return in chronological order
+        return [...history, currentEfficiency];
     }
     
     /**
-     * Update schedule list
+     * Calculate current system efficiency
+     * @returns {number} Efficiency percentage
      */
-    updateScheduleList() {
-        const scheduleList = document.getElementById('scheduleList');
-        if (!scheduleList) return;
+    calculateEfficiency() {
+        const deployedBowsers = dataManager.getBowsersByStatus('deployed').length;
+        const totalBowsers = dataManager.getBowsers().length;
+        const activeDeployments = dataManager.getActiveDeployments().length;
+        const totalLocations = dataManager.getLocations().length;
         
-        // Get today's schedule
-        const schedule = dataManager.getTodaySchedule();
+        // Calculate components
+        const fleetUsage = totalBowsers > 0 ? (deployedBowsers / totalBowsers) * 100 : 0;
+        const coverageRate = totalLocations > 0 ? (activeDeployments / totalLocations) * 100 : 0;
         
-        // Update list
-        if (schedule.length > 0) {
-            scheduleList.innerHTML = schedule.map(item => `
-                <div class="list-item">
-                    <div>
-                        <strong>${item.type.charAt(0).toUpperCase() + item.type.slice(1)}</strong>
-                        <p>Bowser ${item.bowser.number}${item.location ? ` at ${item.location.name}` : ''}</p>
-                    </div>
-                    <div>${Utils.formatDate(item.scheduledTime)}</div>
-                </div>
-            `).join('');
-        } else {
-            scheduleList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-calendar-check"></i>
-                    <p>No scheduled activities today</p>
-                </div>
-            `;
-        }
+        // Average for overall efficiency (additional factors could be added)
+        const efficiency = Math.round((fleetUsage * 0.7) + (coverageRate * 0.3));
+        
+        return Math.min(100, Math.max(0, efficiency));
     }
     
     /**
      * Update all dashboard components
      */
     updateDashboard() {
-        this.updateQuickStats();
+        this.updateStats();
         this.updateMapMarkers();
-        this.updateAlertsList();
-        this.updateScheduleList();
+        this.updateAlerts();
+        this.updateSchedule();
     }
     
     /**
-     * Set up refresh intervals for dashboard components
+     * Update quick stats
+     */
+    updateStats() {
+        // Update active bowsers
+        const activeBowsersElement = document.getElementById('activeBowsers');
+        if (activeBowsersElement) {
+            activeBowsersElement.textContent = dataManager.getBowsersByStatus('deployed').length;
+        }
+        
+        // Update total locations
+        const totalLocationsElement = document.getElementById('totalLocations');
+        if (totalLocationsElement) {
+            totalLocationsElement.textContent = dataManager.getLocations().length;
+        }
+        
+        // Update pending maintenance
+        const pendingMaintenanceElement = document.getElementById('pendingMaintenance');
+        if (pendingMaintenanceElement) {
+            const maintenanceItems = dataManager.data.maintenance || [];
+            pendingMaintenanceElement.textContent = maintenanceItems.filter(m => m.status !== 'completed').length;
+        }
+        
+        // Update efficiency
+        const efficiencyElement = document.getElementById('efficiency');
+        if (efficiencyElement) {
+            efficiencyElement.textContent = `${this.calculateEfficiency()}%`;
+        }
+    }
+    
+    /**
+     * Update alerts list
+     */
+    updateAlerts() {
+        const alertsListElement = document.getElementById('alertsList');
+        if (!alertsListElement) return;
+        
+        const alerts = dataManager.getActiveAlerts();
+        
+        if (alerts.length === 0) {
+            alertsListElement.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-bell-slash"></i>
+                    <p>No recent alerts</p>
+                </div>
+            `;
+            return;
+        }
+        
+        alertsListElement.innerHTML = '';
+        alerts.forEach(alert => {
+            const location = dataManager.getLocationById(alert.locationId);
+            const alertItem = document.createElement('div');
+            alertItem.className = `alert-item priority-${alert.priority}`;
+            alertItem.innerHTML = `
+                <div class="alert-header">
+                    <span class="alert-title">${location ? location.name : 'Unknown Location'}</span>
+                    <span class="alert-time">${this.formatDate(alert.createdAt)}</span>
+                </div>
+                <div class="alert-body">
+                    ${alert.message}
+                </div>
+            `;
+            alertsListElement.appendChild(alertItem);
+        });
+    }
+    
+    /**
+     * Update schedule
+     */
+    updateSchedule() {
+        const scheduleListElement = document.getElementById('scheduleList');
+        if (!scheduleListElement) return;
+        
+        // Get today's maintenance tasks
+        const today = new Date().toISOString().split('T')[0];
+        const maintenanceItems = dataManager.data.maintenance || [];
+        const todayMaintenance = maintenanceItems.filter(m => 
+            m.scheduledDate === today && m.status !== 'completed'
+        );
+        
+        // If no scheduled activities
+        if (todayMaintenance.length === 0) {
+            scheduleListElement.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-check"></i>
+                    <p>No scheduled activities today</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Add schedule items
+        scheduleListElement.innerHTML = '';
+        todayMaintenance.forEach(maintenance => {
+            const bowser = dataManager.getBowserById(maintenance.bowserId);
+            const scheduleItem = document.createElement('div');
+            scheduleItem.className = 'schedule-item';
+            scheduleItem.innerHTML = `
+                <div class="schedule-info">
+                    <span class="schedule-title">${maintenance.type} - ${bowser ? bowser.number : 'Unknown Bowser'}</span>
+                    <span class="schedule-status ${maintenance.status}">${maintenance.status}</span>
+                </div>
+                <div class="schedule-description">
+                    ${maintenance.description}
+                </div>
+            `;
+            scheduleListElement.appendChild(scheduleItem);
+        });
+    }
+    
+    /**
+     * Set up refresh intervals
      */
     setupRefreshIntervals() {
-        // Refresh entire dashboard
-        setInterval(() => this.updateDashboard(), CONFIG.refreshIntervals.dashboard);
+        // Refresh every 30 seconds
+        setInterval(() => this.updateDashboard(), 30000);
+    }
+    
+    /**
+     * Show notification
+     * @param {string} message - Notification message
+     * @param {string} type - Notification type (success, danger, etc)
+     */
+    showNotification(message, type = 'info') {
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
         
-        // Refresh alerts more frequently
-        setInterval(() => this.updateAlertsList(), CONFIG.refreshIntervals.alerts);
+        if (notification && notificationText) {
+            notificationText.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+    }
+    
+    /**
+     * Format date
+     * @param {string} dateString - ISO date string
+     * @returns {string} Formatted date
+     */
+    formatDate(dateString) {
+        if (!dateString) return 'N/A';
         
-        // Refresh schedule
-        setInterval(() => this.updateScheduleList(), CONFIG.refreshIntervals.schedule);
-        
-        // Refresh map
-        setInterval(() => this.updateMapMarkers(), CONFIG.refreshIntervals.map);
+        const date = new Date(dateString);
+        return date.toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     }
 }
 

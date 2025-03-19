@@ -54,7 +54,7 @@ class MaintenanceManager {
     async loadMaintenanceData() {
         try {
             // Load maintenance records from data manager
-            const records = dataManager.maintenanceRecords;
+            const records = dataManager.getActiveMaintenance();
             this.updateCalendar();
             this.displayMaintenanceRecords(records);
         } catch (error) {
@@ -107,7 +107,7 @@ class MaintenanceManager {
                 currentDate.getDate()}`;
 
             // Find maintenance events for this day
-            const events = dataManager.maintenanceRecords.filter(record => {
+            const events = dataManager.getActiveMaintenance().filter(record => {
                 const scheduledDate = new Date(record.scheduledDate);
                 return scheduledDate.toDateString() === currentDate.toDateString();
             });
@@ -116,8 +116,8 @@ class MaintenanceManager {
             events.forEach(event => {
                 const eventElement = document.createElement('div');
                 eventElement.className = `maintenance-event event-${event.priority}`;
-                eventElement.textContent = `${event.type}: Bowser ${
-                    dataManager.bowsers.find(b => b.id === event.bowserId)?.number}`;
+                const bowser = dataManager.getBowserById(event.bowserId);
+                eventElement.textContent = `${event.type}: Bowser ${bowser?.number || 'Unknown'}`;
                 eventElement.addEventListener('click', () => this.viewMaintenanceDetails(event.id));
                 days[i].appendChild(eventElement);
             });
@@ -139,13 +139,13 @@ class MaintenanceManager {
     }
 
     createMaintenanceCard(record) {
-        const bowser = dataManager.bowsers.find(b => b.id === record.bowserId);
+        const bowser = dataManager.getBowserById(record.bowserId);
         const card = document.createElement('div');
         card.className = 'maintenance-card';
         card.innerHTML = `
             <div class="maintenance-info">
                 <div>
-                    <h3>Bowser ${bowser?.number}</h3>
+                    <h3>Bowser ${bowser?.number || 'Unknown'}</h3>
                     <p>${record.description}</p>
                     <div class="maintenance-status status-${record.status}">
                         ${record.status.charAt(0).toUpperCase() + record.status.slice(1)}
@@ -200,92 +200,82 @@ class MaintenanceManager {
         });
     }
 
-    async addNewMaintenance() {
-        const form = document.getElementById('addMaintenanceForm');
-        const bowserId = document.getElementById('bowserId').value;
-        const type = document.getElementById('maintenanceType').value;
-        const description = document.getElementById('description').value;
-        const scheduledDate = document.getElementById('scheduledDate').value;
-        const priority = document.getElementById('priority').value;
-        const assignedTo = document.getElementById('assignedTo').value;
-
-        const newMaintenance = {
-            id: String(dataManager.maintenanceRecords.length + 1),
-            bowserId,
-            type,
-            description,
-            reportedDate: new Date().toISOString(),
-            scheduledDate,
-            status: 'scheduled',
-            priority,
-            assignedTo
-        };
-
-        try {
-            // In a real application, this would be an API call
-            dataManager.maintenanceRecords.push(newMaintenance);
-            
-            // Update UI
-            this.loadMaintenanceData();
-            
-            // Close modal and reset form
-            document.getElementById('addMaintenanceModal').style.display = 'none';
-            form.reset();
-            
-            this.showNotification('Maintenance scheduled successfully', 'success');
-        } catch (error) {
-            this.showNotification('Error scheduling maintenance', 'error');
-        }
-    }
-
     viewMaintenanceDetails(id) {
-        const record = dataManager.maintenanceRecords.find(r => r.id === id);
-        const bowser = dataManager.bowsers.find(b => b.id === record.bowserId);
-        
+        const record = dataManager.getMaintenanceByBowser(id)[0];
+        if (!record) return;
+
+        const bowser = dataManager.getBowserById(record.bowserId);
         const modal = document.getElementById('maintenanceDetailsModal');
         const content = document.getElementById('maintenanceDetailsContent');
-        
+
         content.innerHTML = `
-            <div class="maintenance-details">
-                <div class="detail-group">
-                    <h3>Bowser Information</h3>
-                    <p><strong>Number:</strong> ${bowser.number}</p>
-                    <p><strong>Owner:</strong> ${bowser.owner}</p>
-                    <p><strong>Last Maintenance:</strong> ${bowser.lastMaintenance}</p>
+            <div class="details-grid">
+                <div class="detail-item">
+                    <label>Bowser</label>
+                    <span>${bowser?.number || 'Unknown'}</span>
                 </div>
-                <div class="detail-group">
-                    <h3>Maintenance Details</h3>
-                    <p><strong>Type:</strong> ${record.type}</p>
-                    <p><strong>Description:</strong> ${record.description}</p>
-                    <p><strong>Status:</strong> ${record.status}</p>
-                    <p><strong>Priority:</strong> ${record.priority}</p>
-                    <p><strong>Assigned To:</strong> ${record.assignedTo}</p>
-                    <p><strong>Scheduled Date:</strong> ${new Date(record.scheduledDate).toLocaleString()}</p>
+                <div class="detail-item">
+                    <label>Type</label>
+                    <span>${record.type}</span>
                 </div>
-                <div class="detail-actions">
-                    <button class="primary-btn" onclick="maintenanceManager.updateMaintenanceStatus('${id}', '${
-                        record.status === 'scheduled' ? 'in-progress' : 
-                        record.status === 'in-progress' ? 'completed' : 'scheduled'
-                    }')">
-                        ${record.status === 'scheduled' ? 'Start Maintenance' :
-                          record.status === 'in-progress' ? 'Complete Maintenance' :
-                          'Reopen Maintenance'}
-                    </button>
+                <div class="detail-item">
+                    <label>Status</label>
+                    <span class="status-${record.status}">${record.status}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Priority</label>
+                    <span class="priority-${record.priority}">${record.priority}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Scheduled Date</label>
+                    <span>${new Date(record.scheduledDate).toLocaleString()}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Assigned To</label>
+                    <span>${record.assignedTo}</span>
+                </div>
+                <div class="detail-item full-width">
+                    <label>Description</label>
+                    <p>${record.description}</p>
                 </div>
             </div>
         `;
-        
+
         modal.style.display = 'block';
     }
 
-    updateMaintenanceStatus(id, newStatus) {
-        const record = dataManager.maintenanceRecords.find(r => r.id === id);
-        if (record) {
-            record.status = newStatus;
-            this.loadMaintenanceData();
-            document.getElementById('maintenanceDetailsModal').style.display = 'none';
-            this.showNotification('Maintenance status updated', 'success');
-        }
+    addNewMaintenance() {
+        const form = document.getElementById('addMaintenanceForm');
+        const formData = {
+            bowserId: form.bowserId.value,
+            type: form.maintenanceType.value,
+            description: form.description.value,
+            scheduledDate: form.scheduledDate.value,
+            priority: form.priority.value,
+            assignedTo: form.assignedTo.value,
+            status: 'scheduled',
+            id: Date.now().toString()
+        };
+
+        // Add to mock data
+        dataManager.data.maintenance.push(formData);
+
+        // Update UI
+        this.loadMaintenanceData();
+        document.getElementById('addMaintenanceModal').style.display = 'none';
+        this.showNotification('Maintenance scheduled successfully', 'success');
+    }
+
+    populateBowserSelect() {
+        const select = document.getElementById('bowserId');
+        select.innerHTML = '';
+        
+        dataManager.getBowsers().forEach(bowser => {
+            const option = document.createElement('option');
+            option.value = bowser.id;
+            option.textContent = `Bowser ${bowser.number}`;
+            select.appendChild(option);
+        });
     }
 
     filterRecords() {
@@ -294,7 +284,10 @@ class MaintenanceManager {
         const statusFilter = document.getElementById('statusFilter').value;
         const priorityFilter = document.getElementById('priorityFilter').value;
 
-        const filteredRecords = dataManager.maintenanceRecords.filter(record => {
+        let records = dataManager.getActiveMaintenance();
+
+        // Apply filters
+        records = records.filter(record => {
             const matchesSearch = record.description.toLowerCase().includes(searchTerm);
             const matchesType = typeFilter === 'all' || record.type === typeFilter;
             const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
@@ -303,55 +296,42 @@ class MaintenanceManager {
             return matchesSearch && matchesType && matchesStatus && matchesPriority;
         });
 
-        this.displayMaintenanceRecords(filteredRecords);
+        this.displayMaintenanceRecords(records);
     }
 
-    toggleView(view) {
-        const buttons = document.querySelectorAll('.toggle-btn');
-        buttons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.view === view);
-        });
-
-        this.currentView = view;
-        this.loadMaintenanceData();
-    }
-
-    navigateWeek(offset) {
-        this.currentWeek.setDate(this.currentWeek.getDate() + (offset * 7));
+    navigateWeek(direction) {
+        this.currentWeek.setDate(this.currentWeek.getDate() + (direction * 7));
         this.updateCalendar();
     }
 
-    getWeekStartDate(date) {
-        const startDate = new Date(date);
-        startDate.setDate(startDate.getDate() - startDate.getDay());
-        return startDate;
+    toggleView(view) {
+        this.currentView = view;
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.view === view);
+        });
+        this.loadMaintenanceData();
     }
 
-    populateBowserSelect() {
-        const select = document.getElementById('bowserId');
-        select.innerHTML = '';
-        
-        dataManager.bowsers
-            .filter(bowser => bowser.status !== 'outOfService')
-            .forEach(bowser => {
-                const option = document.createElement('option');
-                option.value = bowser.id;
-                option.textContent = `${bowser.number} (${bowser.owner})`;
-                select.appendChild(option);
-            });
+    getWeekStartDate(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day;
+        return new Date(d.setDate(diff));
     }
 
     showNotification(message, type = 'info') {
         const notification = document.getElementById('notification');
         const notificationText = document.getElementById('notificationText');
         
-        notificationText.textContent = message;
-        notification.className = `notification ${type}`;
-        notification.style.display = 'block';
-        
-        setTimeout(() => {
-            notification.style.display = 'none';
-        }, 3000);
+        if (notification && notificationText) {
+            notificationText.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
     }
 }
 

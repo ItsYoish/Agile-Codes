@@ -6,6 +6,7 @@ class LocationManager {
         this.map = null;
         this.markers = {};
         this.currentView = 'grid';
+        this.dataManager = new MockDataManager(); // Update to use MockDataManager
         this.initializeMap();
         this.initializeEventListeners();
         this.loadLocations();
@@ -14,13 +15,13 @@ class LocationManager {
     initializeMap() {
         this.map = L.map('locationMap').setView([51.505, -0.09], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            attribution: ' OpenStreetMap contributors'
         }).addTo(this.map);
     }
 
     initializeEventListeners() {
         // Search functionality
-        document.getElementById('searchLocation').addEventListener('input', (e) => {
+        document.getElementById('searchLocation').addEventListener('input', () => {
             this.filterLocations();
         });
 
@@ -57,10 +58,10 @@ class LocationManager {
         });
     }
 
-    async loadLocations() {
+    loadLocations() {
         try {
             // Load locations from data manager
-            const locations = await dataManager.getLocations();
+            const locations = this.dataManager.getLocations(); // Update to use this.dataManager
             this.displayLocations(locations);
             this.addMarkersToMap(locations);
         } catch (error) {
@@ -79,6 +80,7 @@ class LocationManager {
     }
 
     createLocationCard(location) {
+        const deployments = this.dataManager.getDeploymentsByLocation(location.id); // Update to use this.dataManager
         const card = document.createElement('div');
         card.className = 'location-card';
         card.innerHTML = `
@@ -86,11 +88,11 @@ class LocationManager {
             <h3>${location.name}</h3>
             <p>${location.address}</p>
             <div class="location-status">
-                <span class="status-indicator status-active"></span>
-                <span>Active</span>
+                <span class="status-indicator status-${location.priority}"></span>
+                <span>${location.priority.charAt(0).toUpperCase() + location.priority.slice(1)} Priority</span>
             </div>
             <div class="bowser-count">
-                <i class="fas fa-truck"></i> ${this.getBowserCount(location.id)} Bowsers Deployed
+                <i class="fas fa-truck"></i> ${deployments.length} Bowsers Deployed
             </div>
         `;
 
@@ -106,6 +108,10 @@ class LocationManager {
     }
 
     addMarkersToMap(locations) {
+        // Clear existing markers
+        Object.values(this.markers).forEach(marker => this.map.removeLayer(marker));
+        this.markers = {};
+
         locations.forEach(location => {
             const marker = L.marker(location.coordinates)
                 .bindPopup(this.createMarkerPopup(location))
@@ -122,13 +128,18 @@ class LocationManager {
     }
 
     createMarkerPopup(location) {
-        const bowserCount = this.getBowserCount(location.id);
+        const deployments = this.dataManager.getDeploymentsByLocation(location.id); // Update to use this.dataManager
+        const activeDeployments = deployments.filter(d => d.status === 'active');
+        const alerts = this.dataManager.getAlertsByLocation(location.id); // Update to use this.dataManager
+        
         return `
             <div class="marker-popup">
                 <h3>${location.name}</h3>
                 <p>${location.address}</p>
                 <p><strong>Type:</strong> ${location.type}</p>
-                <p><strong>Bowsers Deployed:</strong> ${bowserCount}</p>
+                <p><strong>Priority:</strong> ${location.priority}</p>
+                <p><strong>Active Bowsers:</strong> ${activeDeployments.length}</p>
+                <p><strong>Active Alerts:</strong> ${alerts.length}</p>
                 <button onclick="locationManager.viewLocationDetails('${location.id}')" class="primary-btn">
                     View Details
                 </button>
@@ -136,26 +147,17 @@ class LocationManager {
         `;
     }
 
-    getBowserCount(locationId) {
-        // Get active deployments for this location
-        const deployments = dataManager.deployments.filter(d => 
-            d.locationId === locationId && 
-            d.status === 'active'
-        );
-        return deployments.length;
-    }
-
     filterLocations() {
         const searchTerm = document.getElementById('searchLocation').value.toLowerCase();
         const typeFilter = document.getElementById('typeFilter').value;
         const statusFilter = document.getElementById('statusFilter').value;
 
-        const filteredLocations = dataManager.locations.filter(location => {
+        const locations = this.dataManager.getLocations(); // Update to use this.dataManager
+        const filteredLocations = locations.filter(location => {
             const matchesSearch = location.name.toLowerCase().includes(searchTerm) ||
                                 location.address.toLowerCase().includes(searchTerm);
             const matchesType = typeFilter === 'all' || location.type === typeFilter;
-            // For now, we'll assume all locations are active
-            const matchesStatus = statusFilter === 'all' || statusFilter === 'active';
+            const matchesStatus = statusFilter === 'all' || location.status === statusFilter;
 
             return matchesSearch && matchesType && matchesStatus;
         });
@@ -191,65 +193,51 @@ class LocationManager {
         this.currentView = view;
     }
 
-    async addNewLocation() {
+    addNewLocation() {
         const form = document.getElementById('addLocationForm');
-        const name = document.getElementById('locationName').value;
-        const type = document.getElementById('locationType').value;
-        const address = document.getElementById('locationAddress').value;
-        const priority = document.getElementById('locationPriority').value;
-        const notes = document.getElementById('locationNotes').value;
-
-        // In a real application, we would geocode the address here
-        // For now, we'll use a random nearby location
-        const baseCoords = [51.505, -0.09];
-        const randomOffset = () => (Math.random() - 0.5) * 0.02;
-        const coordinates = [baseCoords[0] + randomOffset(), baseCoords[1] + randomOffset()];
-
         const newLocation = {
-            id: String(dataManager.locations.length + 1),
-            name,
-            type,
-            address,
-            coordinates,
-            priority,
-            notes,
+            id: Date.now().toString(),
+            name: form.locationName.value,
+            type: form.locationType.value,
+            address: form.locationAddress.value,
+            priority: form.locationPriority.value,
+            notes: form.locationNotes.value,
+            coordinates: { lat: 51.505, lng: -0.09 }, // Default coordinates for demo
             status: 'active'
         };
 
-        try {
-            // In a real application, this would be an API call
-            dataManager.locations.push(newLocation);
-            
-            // Update UI
-            this.displayLocations(dataManager.locations);
-            this.addMarkersToMap([newLocation]);
-            
-            // Close modal and reset form
-            document.getElementById('addLocationModal').style.display = 'none';
-            form.reset();
-            
-            this.showNotification('Location added successfully', 'success');
-        } catch (error) {
-            this.showNotification('Error adding location', 'error');
-        }
+        // Add to mock data
+        this.dataManager.data.locations.push(newLocation); // Update to use this.dataManager
+
+        // Update UI
+        this.loadLocations();
+        document.getElementById('addLocationModal').style.display = 'none';
+        form.reset();
+        this.showNotification('Location added successfully', 'success');
     }
 
     viewLocationDetails(locationId) {
-        // To be implemented: show detailed view of location
-        console.log('Viewing details for location:', locationId);
+        const location = this.dataManager.getLocationById(locationId); // Update to use this.dataManager
+        const deployments = this.dataManager.getDeploymentsByLocation(locationId); // Update to use this.dataManager
+        const alerts = this.dataManager.getAlertsByLocation(locationId); // Update to use this.dataManager
+        
+        // You can implement a modal or details panel here
+        console.log('Location Details:', { location, deployments, alerts });
     }
 
     showNotification(message, type = 'info') {
         const notification = document.getElementById('notification');
         const notificationText = document.getElementById('notificationText');
         
-        notificationText.textContent = message;
-        notification.className = `notification ${type}`;
-        notification.style.display = 'block';
-        
-        setTimeout(() => {
-            notification.style.display = 'none';
-        }, 3000);
+        if (notification && notificationText) {
+            notificationText.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
     }
 }
 

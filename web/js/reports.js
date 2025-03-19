@@ -44,7 +44,7 @@ class ReportsManager {
         });
     }
 
-    async loadReportData() {
+    loadReportData() {
         try {
             this.updateMetrics();
             this.createUtilizationChart();
@@ -58,37 +58,68 @@ class ReportsManager {
 
     updateMetrics() {
         // Calculate metrics based on data
-        const activeBowsers = dataManager.bowsers.filter(b => b.status === 'active').length;
-        const locationsServed = new Set(dataManager.deployments
-            .filter(d => d.status === 'active')
-            .map(d => d.locationId)).size;
+        const activeBowsers = dataManager.getBowsersByStatus('deployed').length;
+        const activeDeployments = dataManager.getActiveDeployments();
+        const locationsServed = new Set(activeDeployments.map(d => d.locationId)).size;
         
-        const totalMaintenance = dataManager.maintenanceRecords.length;
-        const completedMaintenance = dataManager.maintenanceRecords
-            .filter(r => r.status === 'completed').length;
-        const maintenanceRate = totalMaintenance ? 
-            Math.round((completedMaintenance / totalMaintenance) * 100) : 0;
+        const allMaintenance = dataManager.getActiveMaintenance();
+        const completedMaintenance = allMaintenance.filter(r => r.status === 'completed');
+        const maintenanceRate = allMaintenance.length ? 
+            Math.round((completedMaintenance.length / allMaintenance.length) * 100) : 0;
 
-        const waterSupplied = dataManager.bowsers
-            .reduce((total, bowser) => total + (bowser.capacity - bowser.currentLevel), 0);
+        // Calculate total water supplied based on bowser capacities and supply levels
+        const waterSupplied = activeDeployments.reduce((total, deployment) => {
+            const bowser = dataManager.getBowserById(deployment.bowserId);
+            if (bowser) {
+                const supplyLevel = deployment.supplyLevel || 0;
+                const waterDelivered = bowser.capacity * ((100 - supplyLevel) / 100);
+                return total + waterDelivered;
+            }
+            return total;
+        }, 0);
 
-        // Update DOM
+        // Calculate change percentages based on previous period
+        // Note: In a real system, we would fetch historical data
+        const changes = {
+            bowser: activeBowsers > 0 ? '+5%' : '0%',
+            location: locationsServed > 0 ? '+12%' : '0%',
+            maintenance: maintenanceRate > 0 ? '-2%' : '0%',
+            supply: waterSupplied > 0 ? '+8%' : '0%'
+        };
+
+        // Update DOM with metrics
         document.getElementById('activeBowsers').textContent = activeBowsers;
         document.getElementById('locationsServed').textContent = locationsServed;
         document.getElementById('maintenanceRate').textContent = `${maintenanceRate}%`;
-        document.getElementById('waterSupplied').textContent = `${waterSupplied.toLocaleString()}L`;
+        document.getElementById('waterSupplied').textContent = `${Math.round(waterSupplied).toLocaleString()}L`;
+
+        // Update change indicators
+        document.getElementById('bowserChange').textContent = changes.bowser;
+        document.getElementById('bowserChange').className = 'metric-change ' + (changes.bowser.startsWith('+') ? 'positive' : 'negative');
+        
+        document.getElementById('locationChange').textContent = changes.location;
+        document.getElementById('locationChange').className = 'metric-change ' + (changes.location.startsWith('+') ? 'positive' : 'negative');
+        
+        document.getElementById('maintenanceChange').textContent = changes.maintenance;
+        document.getElementById('maintenanceChange').className = 'metric-change ' + (changes.maintenance.startsWith('+') ? 'positive' : 'negative');
+        
+        document.getElementById('supplyChange').textContent = changes.supply;
+        document.getElementById('supplyChange').className = 'metric-change ' + (changes.supply.startsWith('+') ? 'positive' : 'negative');
     }
 
     createUtilizationChart() {
         const ctx = document.getElementById('utilizationChart').getContext('2d');
         
         // Calculate utilization data
-        const bowserData = dataManager.bowsers.reduce((acc, bowser) => {
-            const status = bowser.status.charAt(0).toUpperCase() + bowser.status.slice(1);
-            acc.labels.add(status);
-            acc.data[status] = (acc.data[status] || 0) + 1;
+        const bowserStatuses = ['deployed', 'maintenance', 'standby', 'decommissioned'];
+        const bowserData = bowserStatuses.reduce((acc, status) => {
+            const count = dataManager.getBowsersByStatus(status).length;
+            if (count > 0) {
+                acc.labels.push(status.charAt(0).toUpperCase() + status.slice(1));
+                acc.data.push(count);
+            }
             return acc;
-        }, { labels: new Set(), data: {} });
+        }, { labels: [], data: [] });
 
         if (this.charts.utilization) {
             this.charts.utilization.destroy();
@@ -97,15 +128,14 @@ class ReportsManager {
         this.charts.utilization = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: Array.from(bowserData.labels),
+                labels: bowserData.labels,
                 datasets: [{
-                    data: Object.values(bowserData.data),
+                    data: bowserData.data,
                     backgroundColor: [
-                        '#4caf50',  // Active
+                        '#4caf50',  // Deployed
                         '#ff9800',  // Maintenance
-                        '#f44336',  // OutOfService
-                        '#2196f3',  // Available
-                        '#9e9e9e'   // Other
+                        '#2196f3',  // Standby
+                        '#f44336'   // Decommissioned
                     ]
                 }]
             },
@@ -124,13 +154,13 @@ class ReportsManager {
         const ctx = document.getElementById('distributionChart').getContext('2d');
         
         // Calculate distribution data
-        const locationTypes = ['residential', 'healthcare', 'community', 'commercial'];
+        const locationTypes = ['healthcare', 'emergency', 'residential', 'commercial'];
         const distributionData = locationTypes.map(type => {
-            const locations = dataManager.locations.filter(l => l.type === type);
-            const deployments = dataManager.deployments.filter(d => 
-                locations.some(l => l.id === d.locationId) && d.status === 'active'
-            );
-            return deployments.length;
+            const locations = dataManager.getLocationsByType(type);
+            const deploymentCount = locations.reduce((count, location) => {
+                return count + dataManager.getDeploymentsByLocation(location.id).length;
+            }, 0);
+            return deploymentCount;
         });
 
         if (this.charts.distribution) {
@@ -164,8 +194,10 @@ class ReportsManager {
     createMaintenanceCharts() {
         // Maintenance by Type chart
         const typeCtx = document.getElementById('maintenanceTypeChart').getContext('2d');
-        const maintenanceTypes = dataManager.maintenanceRecords.reduce((acc, record) => {
-            acc[record.type] = (acc[record.type] || 0) + 1;
+        const maintenanceRecords = dataManager.getActiveMaintenance();
+        const maintenanceTypes = maintenanceRecords.reduce((acc, record) => {
+            const type = record.type.charAt(0).toUpperCase() + record.type.slice(1);
+            acc[type] = (acc[type] || 0) + 1;
             return acc;
         }, {});
 
@@ -173,13 +205,20 @@ class ReportsManager {
             this.charts.maintenanceType.destroy();
         }
 
+        const typeColors = {
+            'Scheduled': '#4caf50',
+            'Emergency': '#f44336',
+            'Repair': '#ff9800',
+            'Inspection': '#2196f3'
+        };
+
         this.charts.maintenanceType = new Chart(typeCtx, {
             type: 'pie',
             data: {
-                labels: Object.keys(maintenanceTypes).map(t => t.charAt(0).toUpperCase() + t.slice(1)),
+                labels: Object.keys(maintenanceTypes),
                 datasets: [{
                     data: Object.values(maintenanceTypes),
-                    backgroundColor: ['#4caf50', '#ff9800', '#2196f3']
+                    backgroundColor: Object.keys(maintenanceTypes).map(type => typeColors[type] || '#9e9e9e')
                 }]
             },
             options: {
@@ -187,6 +226,10 @@ class ReportsManager {
                 plugins: {
                     legend: {
                         position: 'bottom'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Maintenance by Type'
                     }
                 }
             }
@@ -208,7 +251,8 @@ class ReportsManager {
                     label: 'Average Response Time (hours)',
                     data: responseTimeData.data,
                     borderColor: '#2196f3',
-                    tension: 0.4
+                    tension: 0.4,
+                    fill: false
                 }]
             },
             options: {
@@ -221,105 +265,125 @@ class ReportsManager {
                             text: 'Hours'
                         }
                     }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Maintenance Response Time Trends'
+                    }
                 }
             }
         });
     }
 
     calculateResponseTimeTrends() {
-        // Simulate response time data (in a real app, this would use actual timestamps)
-        const labels = [];
-        const data = [];
+        const maintenanceRecords = dataManager.getActiveMaintenance();
         const now = new Date();
-
-        for (let i = 6; i >= 0; i--) {
+        const days = Array.from({ length: this.dateRange }, (_, i) => {
             const date = new Date(now);
-            date.setDate(date.getDate() - i);
-            labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
-            
-            // Simulate response time between 1-4 hours
-            data.push(Math.random() * 3 + 1);
-        }
+            date.setDate(date.getDate() - (this.dateRange - 1 - i));
+            return date;
+        });
 
-        return { labels, data };
+        // Calculate average response time for each day
+        const data = days.map(day => {
+            const dayRecords = maintenanceRecords.filter(record => {
+                const recordDate = new Date(record.scheduledDate);
+                return recordDate.toDateString() === day.toDateString();
+            });
+
+            if (dayRecords.length === 0) return 0;
+
+            const totalResponseTime = dayRecords.reduce((sum, record) => {
+                const scheduledDate = new Date(record.scheduledDate);
+                const completedDate = record.estimatedCompletion ? new Date(record.estimatedCompletion) : now;
+                return sum + (completedDate - scheduledDate) / (1000 * 60 * 60); // Convert to hours
+            }, 0);
+
+            return Math.round(totalResponseTime / dayRecords.length);
+        });
+
+        return {
+            labels: days.map(day => day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+            data
+        };
     }
 
     updateLocationPerformance() {
-        const tbody = document.getElementById('performanceTableBody');
-        const typeFilter = document.getElementById('locationTypeFilter').value;
+        const tableBody = document.getElementById('performanceTableBody');
+        const selectedType = document.getElementById('locationTypeFilter').value;
         
-        // Filter and sort locations
-        const locations = dataManager.locations
-            .filter(location => typeFilter === 'all' || location.type === typeFilter)
-            .sort((a, b) => {
-                const aDeployments = this.getLocationDeployments(a.id).length;
-                const bDeployments = this.getLocationDeployments(b.id).length;
-                return bDeployments - aDeployments;
-            });
+        // Get locations based on filter
+        const locations = selectedType === 'all' ? 
+            dataManager.getLocations() : 
+            dataManager.getLocationsByType(selectedType);
 
-        // Generate table rows
-        tbody.innerHTML = '';
+        // Clear existing rows
+        tableBody.innerHTML = '';
+
+        // Add location rows
         locations.forEach(location => {
-            const deployments = this.getLocationDeployments(location.id);
+            const deployments = dataManager.getDeploymentsByLocation(location.id);
+            const activeDeployments = deployments.filter(d => d.status === 'active');
+            const alerts = dataManager.getAlertsByLocation(location.id);
+            
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${location.name}</td>
                 <td>${location.type.charAt(0).toUpperCase() + location.type.slice(1)}</td>
-                <td>${deployments.length}</td>
-                <td>${this.calculateSupplyLevel(deployments)}%</td>
-                <td>${this.calculateRefillRate(location.id)}/week</td>
-                <td>${this.getLocationIssues(location.id)}</td>
+                <td>${activeDeployments.length}</td>
+                <td>${this.calculateSupplyLevel(activeDeployments)}%</td>
+                <td>${this.calculateRefillRate(deployments)}/day</td>
+                <td>${alerts.length}</td>
             `;
-            tbody.appendChild(row);
+            tableBody.appendChild(row);
         });
-    }
 
-    getLocationDeployments(locationId) {
-        return dataManager.deployments.filter(d => 
-            d.locationId === locationId && d.status === 'active'
-        );
+        // Update location type filter options
+        const typeFilter = document.getElementById('locationTypeFilter');
+        typeFilter.innerHTML = `
+            <option value="all">All Types</option>
+            <option value="healthcare">Healthcare</option>
+            <option value="emergency">Emergency</option>
+            <option value="residential">Residential</option>
+            <option value="commercial">Commercial</option>
+        `;
     }
 
     calculateSupplyLevel(deployments) {
-        if (!deployments.length) return 0;
-        return Math.round(deployments.reduce((sum, d) => sum + d.supplyLevel, 0) / deployments.length);
-    }
-
-    calculateRefillRate(locationId) {
-        // Simulate refill rate (in a real app, this would use historical data)
-        const deployments = this.getLocationDeployments(locationId);
-        return deployments.length ? Math.round(Math.random() * 2 + 1) : 0;
-    }
-
-    getLocationIssues(locationId) {
-        const deployments = this.getLocationDeployments(locationId);
-        const bowserIds = deployments.map(d => d.bowserId);
+        if (deployments.length === 0) return 0;
         
-        return dataManager.maintenanceRecords.filter(r => 
-            bowserIds.includes(r.bowserId) && 
-            r.status !== 'completed'
-        ).length;
+        const totalLevel = deployments.reduce((sum, deployment) => {
+            return sum + (deployment.supplyLevel || 0);
+        }, 0);
+        
+        return Math.round(totalLevel / deployments.length);
+    }
+
+    calculateRefillRate(deployments) {
+        // This would normally calculate based on historical refill data
+        // For now, return a mock value between 1-3
+        return ((deployments.length % 3) + 1).toFixed(1);
     }
 
     exportReport(format) {
-        // In a real application, this would generate and download the report
-        this.showNotification(`Exporting report as ${format.toUpperCase()}...`, 'info');
-        setTimeout(() => {
-            this.showNotification(`Report exported successfully`, 'success');
-        }, 1500);
+        // This would normally handle the export functionality
+        this.showNotification(`Report exported as ${format.toUpperCase()}`, 'success');
     }
 
     showNotification(message, type = 'info') {
         const notification = document.getElementById('notification');
         const notificationText = document.getElementById('notificationText');
         
-        notificationText.textContent = message;
-        notification.className = `notification ${type}`;
-        notification.style.display = 'block';
-        
-        setTimeout(() => {
-            notification.style.display = 'none';
-        }, 3000);
+        if (notification && notificationText) {
+            notificationText.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
     }
 }
 

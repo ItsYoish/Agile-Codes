@@ -52,9 +52,9 @@
                         <i class="fas fa-truck"></i>
                     </div>
                     <div class="metric-content">
-                        <h3>Active Bowsers</h3>
+                        <h3>Deployed Bowsers</h3>
                         <div class="metric-value" id="activeBowsers">0</div>
-                        <div class="metric-change positive">+5% from last period</div>
+                        <div class="metric-change" id="bowserChange"></div>
                     </div>
                 </div>
                 <div class="metric-card">
@@ -62,9 +62,9 @@
                         <i class="fas fa-map-marker-alt"></i>
                     </div>
                     <div class="metric-content">
-                        <h3>Locations Served</h3>
+                        <h3>Active Locations</h3>
                         <div class="metric-value" id="locationsServed">0</div>
-                        <div class="metric-change positive">+12% from last period</div>
+                        <div class="metric-change" id="locationChange"></div>
                     </div>
                 </div>
                 <div class="metric-card">
@@ -72,9 +72,9 @@
                         <i class="fas fa-wrench"></i>
                     </div>
                     <div class="metric-content">
-                        <h3>Maintenance Rate</h3>
+                        <h3>Maintenance Completion</h3>
                         <div class="metric-value" id="maintenanceRate">0%</div>
-                        <div class="metric-change negative">-2% from last period</div>
+                        <div class="metric-change" id="maintenanceChange"></div>
                     </div>
                 </div>
                 <div class="metric-card">
@@ -82,9 +82,9 @@
                         <i class="fas fa-tint"></i>
                     </div>
                     <div class="metric-content">
-                        <h3>Water Supplied</h3>
+                        <h3>Total Water Supplied</h3>
                         <div class="metric-value" id="waterSupplied">0L</div>
-                        <div class="metric-change positive">+8% from last period</div>
+                        <div class="metric-change" id="supplyChange"></div>
                     </div>
                 </div>
             </div>
@@ -92,11 +92,11 @@
             <!-- Charts -->
             <div class="chart-container">
                 <div class="chart-card">
-                    <h3>Bowser Utilization</h3>
+                    <h3>Bowser Status Distribution</h3>
                     <canvas id="utilizationChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Supply Distribution by Location Type</h3>
+                    <h3>Deployments by Location Type</h3>
                     <canvas id="distributionChart"></canvas>
                 </div>
             </div>
@@ -123,9 +123,9 @@
                     <div class="performance-filters">
                         <select id="locationTypeFilter">
                             <option value="all">All Types</option>
-                            <option value="residential">Residential</option>
                             <option value="healthcare">Healthcare</option>
-                            <option value="community">Community</option>
+                            <option value="emergency">Emergency</option>
+                            <option value="residential">Residential</option>
                             <option value="commercial">Commercial</option>
                         </select>
                     </div>
@@ -143,6 +143,38 @@
                             </tr>
                         </thead>
                         <tbody id="performanceTableBody">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Active Alerts -->
+            <div class="alerts-section">
+                <div class="alerts-header">
+                    <h3>Active Alerts</h3>
+                    <div class="alerts-filters">
+                        <select id="alertPriorityFilter">
+                            <option value="all">All Priorities</option>
+                            <option value="1">High Priority</option>
+                            <option value="2">Medium Priority</option>
+                            <option value="3">Low Priority</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="alerts-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Location</th>
+                                <th>Message</th>
+                                <th>Priority</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alertsTableBody">
                             <!-- Will be populated by JavaScript -->
                         </tbody>
                     </table>
@@ -171,9 +203,8 @@
         <span id="notificationText"></span>
     </div>
 
-    <script src="js/config.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/mock-data.js"></script>
     <script src="js/reports.js"></script>
 </body>
 </html>

@@ -25,6 +25,7 @@
             <a href="maintenance.html">Maintenance</a>
             <a href="reports.html">Reports</a>
             <a href="finance.html">Finance</a>
+            <a href="LoginPage.html">Login</a>
         </div>
     </nav>
 
@@ -33,21 +34,22 @@
             <h1>Bowser Fleet Management</h1>
             <div class="header-actions">
                 <button class="btn primary-btn" id="addBowserBtn">
-                    <i class="fas fa-plus"></i> Add New Bowser
+                    <i class="fas fa-plus"></i>
+                    <span>Add New Bowser</span>
                 </button>
             </div>
         </header>
         
-        <div class="filters-section">
+        <section class="filters-section">
             <div class="search-container">
                 <div class="input-group">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchBowser" placeholder="Search bowsers...">
+                    <input type="text" id="searchBowser" placeholder="Search bowsers by ID, location, or status...">
                 </div>
             </div>
-            <div class="filter-controls">
+            <div class="filters-grid">
                 <div class="input-group">
-                    <select id="statusFilter">
+                    <select id="statusFilter" class="w-full">
                         <option value="">All Statuses</option>
                         <option value="active">Active</option>
                         <option value="maintenance">In Maintenance</option>
@@ -55,7 +57,16 @@
                     </select>
                 </div>
                 <div class="input-group">
-                    <select id="capacityFilter">
+                    <select id="locationFilter" class="w-full">
+                        <option value="">All Locations</option>
+                        <option value="north">North Region</option>
+                        <option value="south">South Region</option>
+                        <option value="east">East Region</option>
+                        <option value="west">West Region</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <select id="capacityFilter" class="w-full">
                         <option value="">All Capacities</option>
                         <option value="small">Small (< 5000L)</option>
                         <option value="medium">Medium (5000L - 10000L)</option>
@@ -63,54 +74,62 @@
                     </select>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="bowser-grid">
+        <div class="bowser-grid" id="bowserGrid">
             <!-- Bowser cards will be dynamically inserted here -->
-        </div>
-
-        <!-- Bowser Details Modal -->
-        <div id="bowserDetailsModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Bowser Details</h2>
-                    <button class="close-modal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="details-grid">
-                        <div class="detail-group">
-                            <label>Bowser ID:</label>
-                            <span id="modalBowserId"></span>
-                        </div>
-                        <div class="detail-group">
-                            <label>Status:</label>
-                            <span id="modalStatus"></span>
-                        </div>
-                        <div class="detail-group">
-                            <label>Capacity:</label>
-                            <span id="modalCapacity"></span>
-                        </div>
-                        <div class="detail-group">
-                            <label>Current Location:</label>
-                            <span id="modalLocation"></span>
-                        </div>
-                    </div>
-                    <div class="modal-actions">
-                        <button class="btn secondary-btn" id="editBowserBtn">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="btn danger-btn" id="deleteBowserBtn">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
     </main>
 
-    <script src="js/utils.js"></script>
+    <!-- Add/Edit Bowser Modal -->
+    <div class="modal" id="bowserModal">
+        <div class="modal-header">
+            <h2 id="modalTitle">Add New Bowser</h2>
+            <button class="modal-close" id="closeModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="bowserForm">
+                <div class="input-group">
+                    <label for="bowserId">Bowser ID</label>
+                    <input type="text" id="bowserId" required placeholder="Enter bowser ID">
+                </div>
+                <div class="input-group">
+                    <label for="bowserCapacity">Capacity (Liters)</label>
+                    <input type="number" id="bowserCapacity" required placeholder="Enter capacity">
+                </div>
+                <div class="input-group">
+                    <label for="bowserLocation">Current Location</label>
+                    <select id="bowserLocation" required>
+                        <option value="">Select location</option>
+                        <option value="north">North Region</option>
+                        <option value="south">South Region</option>
+                        <option value="east">East Region</option>
+                        <option value="west">West Region</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="bowserStatus">Status</label>
+                    <select id="bowserStatus" required>
+                        <option value="active">Active</option>
+                        <option value="maintenance">In Maintenance</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="bowserNotes">Notes</label>
+                    <textarea id="bowserNotes" rows="3" placeholder="Enter any additional notes"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn secondary-btn" id="cancelBtn">Cancel</button>
+            <button class="btn primary-btn" id="saveBtn">Save Changes</button>
+        </div>
+    </div>
+
+    <script src="js/public.js"></script>
     <script src="js/management.js"></script>
 </body>
 </html>

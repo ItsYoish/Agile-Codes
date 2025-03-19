@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Management - AquaAlert</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/finance.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-water fa-lg"></i>
+            <span>AquaAlert</span>
+        </div>
+        <div class="nav-links">
+            <a href="management.html">Management</a>
+            <a href="locations.html">Locations</a>
+            <a href="maintenance.html">Maintenance</a>
+            <a href="reports.html">Reports</a>
+            <a href="finance.html" class="active">Finance</a>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Financial Overview -->
+        <section class="overview-section">
+            <div class="section-header">
+                <h2>Financial Overview</h2>
+                <div class="date-range">
+                    <input type="month" id="financialMonth" value="2025-03">
+                </div>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon"><i class="fas fa-pound-sign"></i></div>
+                    <div class="metric-content">
+                        <h3>Total Revenue</h3>
+                        <p class="metric-value">£24,580</p>
+                        <span class="metric-trend positive">+5.2% vs last month</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <div class="metric-content">
+                        <h3>Outstanding Invoices</h3>
+                        <p class="metric-value">£8,920</p>
+                        <span class="metric-trend negative">+12.3% vs last month</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon"><i class="fas fa-handshake"></i></div>
+                    <div class="metric-content">
+                        <h3>Mutual Aid Balance</h3>
+                        <p class="metric-value">£3,450</p>
+                        <span class="metric-trend">Net Lender</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="metric-content">
+                        <h3>Operating Costs</h3>
+                        <p class="metric-value">£18,750</p>
+                        <span class="metric-trend negative">+2.8% vs last month</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Invoices Management -->
+        <section class="invoices-section">
+            <div class="section-header">
+                <h2>Invoices</h2>
+                <div class="actions">
+                    <button class="primary-btn" onclick="financeManager.createInvoice()">
+                        <i class="fas fa-plus"></i> New Invoice
+                    </button>
+                    <button class="secondary-btn" onclick="financeManager.exportInvoices()">
+                        <i class="fas fa-file-export"></i> Export
+                    </button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="invoicesTable">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Client</th>
+                            <th>Service Type</th>
+                            <th>Amount</th>
+                            <th>Issue Date</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoicesList">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Mutual Aid Scheme -->
+        <section class="mutual-aid-section">
+            <div class="section-header">
+                <h2>Mutual Aid Scheme</h2>
+                <div class="actions">
+                    <button class="primary-btn" onclick="financeManager.recordMutualAid()">
+                        <i class="fas fa-plus"></i> Record Transaction
+                    </button>
+                </div>
+            </div>
+            <div class="mutual-aid-grid">
+                <div class="partners-list">
+                    <h3>Partner Companies</h3>
+                    <div class="partner-cards" id="partnersList">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+                <div class="transactions-list">
+                    <h3>Recent Transactions</h3>
+                    <div class="table-container">
+                        <table id="transactionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Partner</th>
+                                    <th>Type</th>
+                                    <th>Resources</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsList">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- New Invoice Modal -->
+    <div id="invoiceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Invoice</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="invoiceForm">
+                    <div class="form-group">
+                        <label for="clientName">Client Name</label>
+                        <input type="text" id="clientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="serviceType">Service Type</label>
+                        <select id="serviceType" required>
+                            <option value="">Select service type</option>
+                            <option value="deployment">Bowser Deployment</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="rental">Equipment Rental</option>
+                            <option value="other">Other Services</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount (£)</label>
+                        <input type="number" id="amount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dueDate">Due Date</label>
+                        <input type="date" id="dueDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn" onclick="financeManager.closeModal('invoiceModal')">Cancel</button>
+                <button class="primary-btn" onclick="financeManager.submitInvoice()">Create Invoice</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mutual Aid Transaction Modal -->
+    <div id="mutualAidModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Record Mutual Aid Transaction</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="mutualAidForm">
+                    <div class="form-group">
+                        <label for="partnerCompany">Partner Company</label>
+                        <select id="partnerCompany" required>
+                            <option value="">Select partner company</option>
+                            <!-- Populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionType">Transaction Type</label>
+                        <select id="transactionType" required>
+                            <option value="">Select type</option>
+                            <option value="lend">Lend Resources</option>
+                            <option value="borrow">Borrow Resources</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="resourceType">Resource Type</label>
+                        <select id="resourceType" required>
+                            <option value="">Select resource type</option>
+                            <option value="bowser">Water Bowser</option>
+                            <option value="equipment">Equipment</option>
+                            <option value="personnel">Personnel</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="quantity">Quantity</label>
+                        <input type="number" id="quantity" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="duration">Duration (Days)</label>
+                        <input type="number" id="duration" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="estimatedCost">Estimated Cost (£)</label>
+                        <input type="number" id="estimatedCost" step="0.01" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn" onclick="financeManager.closeModal('mutualAidModal')">Cancel</button>
+                <button class="primary-btn" onclick="financeManager.submitMutualAid()">Record Transaction</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/finance.js"></script>
+</body>
+</html>

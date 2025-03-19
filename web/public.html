@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Water Supply - AquaAlert</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/public.css">
+</head>
+<body>
+    <nav class="navbar public-nav">
+        <div class="nav-brand">
+            <i class="fas fa-water fa-lg"></i>
+            <span>AquaAlert</span>
+        </div>
+        <div class="nav-links">
+            <a href="#map-section" class="active">Find Water</a>
+            <a href="#report-section">Report Issue</a>
+            <a href="#alerts-section">Alerts</a>
+            <a href="#subscribe-section">Subscribe</a>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Emergency Banner -->
+        <div class="emergency-banner" id="emergencyBanner">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Emergency water supply disruption in SW1 area. Multiple bowsers deployed.</span>
+            <button class="close-banner">&times;</button>
+        </div>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <h1>Find Emergency Water Supply Near You</h1>
+                <div class="search-container">
+                    <input type="text" id="locationSearch" placeholder="Enter your postcode...">
+                    <button class="search-btn">
+                        <i class="fas fa-search"></i> Find Water
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Map Section -->
+        <section id="map-section" class="map-section">
+            <div class="section-header">
+                <h2>Water Bowser Locations</h2>
+                <div class="filters">
+                    <select id="areaFilter">
+                        <option value="all">All Areas</option>
+                        <option value="sw1">SW1</option>
+                        <option value="sw2">SW2</option>
+                        <option value="se1">SE1</option>
+                    </select>
+                    <select id="statusFilter">
+                        <option value="all">All Statuses</option>
+                        <option value="available">Available</option>
+                        <option value="refilling">Refilling Soon</option>
+                        <option value="maintenance">Under Maintenance</option>
+                    </select>
+                </div>
+            </div>
+            <div id="publicMap" class="map-container"></div>
+            <div class="bowser-list" id="bowserList">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Report Issue Section -->
+        <section id="report-section" class="report-section">
+            <div class="section-header">
+                <h2>Report an Issue</h2>
+            </div>
+            <div class="report-container">
+                <form id="reportForm" class="report-form">
+                    <div class="form-group">
+                        <label for="bowserNumber">Bowser Number</label>
+                        <input type="text" id="bowserNumber" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="issueType">Issue Type</label>
+                        <select id="issueType" required>
+                            <option value="">Select an issue type</option>
+                            <option value="empty">Empty/Low Supply</option>
+                            <option value="damage">Damage/Vandalism</option>
+                            <option value="quality">Water Quality</option>
+                            <option value="access">Access Problems</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactInfo">Contact Information (optional)</label>
+                        <input type="email" id="contactInfo" placeholder="Your email for updates">
+                    </div>
+                    <button type="submit" class="submit-btn">Submit Report</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Alerts Section -->
+        <section id="alerts-section" class="alerts-section">
+            <div class="section-header">
+                <h2>Current Alerts</h2>
+            </div>
+            <div class="alerts-container" id="alertsList">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Subscribe Section -->
+        <section id="subscribe-section" class="subscribe-section">
+            <div class="section-header">
+                <h2>Stay Updated</h2>
+                <p>Receive alerts about water supply in your area</p>
+            </div>
+            <div class="subscribe-container">
+                <form id="subscribeForm" class="subscribe-form">
+                    <div class="form-group">
+                        <label for="subscribePostcode">Postcode</label>
+                        <input type="text" id="subscribePostcode" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="subscribeEmail">Email</label>
+                        <input type="email" id="subscribeEmail" required>
+                    </div>
+                    <div class="notification-options">
+                        <label>
+                            <input type="checkbox" name="notifications" value="supply"> Supply Updates
+                        </label>
+                        <label>
+                            <input type="checkbox" name="notifications" value="maintenance"> Maintenance
+                        </label>
+                        <label>
+                            <input type="checkbox" name="notifications" value="emergency"> Emergency Alerts
+                        </label>
+                    </div>
+                    <button type="submit" class="submit-btn">Subscribe</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="public-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Emergency Contact</h3>
+                <p><i class="fas fa-phone"></i> 0800 123 4567</p>
+                <p><i class="fas fa-envelope"></i> emergency@aquaalert.uk</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <a href="#map-section">Find Water</a>
+                <a href="#report-section">Report Issue</a>
+                <a href="#alerts-section">View Alerts</a>
+            </div>
+            <div class="footer-section">
+                <h3>About AquaAlert</h3>
+                <p>Emergency water supply management system for UK water companies.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 AquaAlert. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <div id="notification" class="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/public.js"></script>
+</body>
+</html>

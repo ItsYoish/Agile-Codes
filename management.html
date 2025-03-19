@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/management.css">
+    <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
     <nav class="navbar">
@@ -14,127 +15,102 @@
             <i class="fas fa-water fa-lg"></i>
             <span>AquaAlert</span>
         </div>
+        <button class="nav-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
         <div class="nav-links">
             <a href="index.html">Dashboard</a>
             <a href="management.html" class="active">Bowser Management</a>
             <a href="locations.html">Locations</a>
             <a href="maintenance.html">Maintenance</a>
             <a href="reports.html">Reports</a>
+            <a href="finance.html">Finance</a>
         </div>
     </nav>
 
     <main class="management-container">
-        <h1>Bowser Fleet Management</h1>
+        <header class="page-header">
+            <h1>Bowser Fleet Management</h1>
+            <div class="header-actions">
+                <button class="btn primary-btn" id="addBowserBtn">
+                    <i class="fas fa-plus"></i> Add New Bowser
+                </button>
+            </div>
+        </header>
         
-        <div class="action-bar">
+        <div class="filters-section">
             <div class="search-container">
-                <input type="text" id="searchBowser" placeholder="Search bowsers...">
-                <button class="search-btn"><i class="fas fa-search"></i></button>
+                <div class="input-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchBowser" placeholder="Search bowsers...">
+                </div>
             </div>
-            <div class="filters">
-                <select id="statusFilter">
-                    <option value="all">All Statuses</option>
-                    <option value="active">Active</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="outOfService">Out of Service</option>
-                    <option value="lowSupply">Low Supply</option>
-                    <option value="available">Available</option>
-                </select>
-                <select id="capacityFilter">
-                    <option value="all">All Capacities</option>
-                    <option value="1000">1,000 L</option>
-                    <option value="2000">2,000 L</option>
-                    <option value="5000">5,000 L</option>
-                    <option value="10000">10,000 L</option>
-                </select>
+            <div class="filter-controls">
+                <div class="input-group">
+                    <select id="statusFilter">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="maintenance">In Maintenance</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <select id="capacityFilter">
+                        <option value="">All Capacities</option>
+                        <option value="small">Small (< 5000L)</option>
+                        <option value="medium">Medium (5000L - 10000L)</option>
+                        <option value="large">Large (> 10000L)</option>
+                    </select>
+                </div>
             </div>
-            <button id="addBowserBtn" class="primary-btn">
-                <i class="fas fa-plus"></i> Add Bowser
-            </button>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="all">All Bowsers</button>
-            <button class="tab-btn" data-tab="deployed">Deployed</button>
-            <button class="tab-btn" data-tab="available">Available</button>
-            <button class="tab-btn" data-tab="maintenance">Maintenance</button>
         </div>
 
-        <div class="bowser-grid" id="bowserGrid">
-            <!-- Grid will be populated by JavaScript -->
-            <div class="loading">
-                <i class="fas fa-spinner fa-spin"></i> Loading bowsers...
+        <div class="bowser-grid">
+            <!-- Bowser cards will be dynamically inserted here -->
+        </div>
+
+        <!-- Bowser Details Modal -->
+        <div id="bowserDetailsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Bowser Details</h2>
+                    <button class="close-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="details-grid">
+                        <div class="detail-group">
+                            <label>Bowser ID:</label>
+                            <span id="modalBowserId"></span>
+                        </div>
+                        <div class="detail-group">
+                            <label>Status:</label>
+                            <span id="modalStatus"></span>
+                        </div>
+                        <div class="detail-group">
+                            <label>Capacity:</label>
+                            <span id="modalCapacity"></span>
+                        </div>
+                        <div class="detail-group">
+                            <label>Current Location:</label>
+                            <span id="modalLocation"></span>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn secondary-btn" id="editBowserBtn">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn danger-btn" id="deleteBowserBtn">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
-    <!-- Add Bowser Modal -->
-    <div id="addBowserModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Add New Bowser</h2>
-                <span class="close-modal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <form id="addBowserForm">
-                    <div class="form-group">
-                        <label for="bowserNumber">Bowser Number</label>
-                        <input type="text" id="bowserNumber" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="bowserCapacity">Capacity (Liters)</label>
-                        <select id="bowserCapacity" required>
-                            <option value="1000">1,000 L</option>
-                            <option value="2000">2,000 L</option>
-                            <option value="5000">5,000 L</option>
-                            <option value="10000">10,000 L</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="bowserOwner">Owner</label>
-                        <input type="text" id="bowserOwner" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="bowserStatus">Status</label>
-                        <select id="bowserStatus" required>
-                            <option value="available">Available</option>
-                            <option value="maintenance">Maintenance</option>
-                            <option value="outOfService">Out of Service</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="bowserNotes">Notes</label>
-                        <textarea id="bowserNotes" rows="3"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="secondary-btn cancel-btn">Cancel</button>
-                        <button type="submit" class="primary-btn">Add Bowser</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bowser Details Modal -->
-    <div id="bowserDetailsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Bowser Details</h2>
-                <span class="close-modal">&times;</span>
-            </div>
-            <div class="modal-body" id="bowserDetailsContent">
-                <!-- Content will be populated by JavaScript -->
-            </div>
-        </div>
-    </div>
-
-    <div id="notification" class="notification">
-        <span id="notificationText"></span>
-    </div>
-
-    <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
-    <script src="js/data.js"></script>
     <script src="js/management.js"></script>
 </body>
 </html>

@@ -14,7 +14,7 @@ class PublicInterface {
     initializeMap() {
         this.map = L.map('publicMap').setView([51.505, -0.09], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            attribution: ' OpenStreetMap contributors'
         }).addTo(this.map);
     }
 
@@ -321,4 +321,41 @@ class PublicInterface {
 let publicInterface;
 document.addEventListener('DOMContentLoaded', () => {
     publicInterface = new PublicInterface();
+});
+
+// Mobile Navigation Toggle
+document.addEventListener('DOMContentLoaded', () => {
+    const navToggle = document.createElement('button');
+    navToggle.className = 'nav-toggle';
+    navToggle.innerHTML = '<i class="fas fa-bars"></i>';
+    
+    const navLinks = document.querySelector('.nav-links');
+    const navbar = document.querySelector('.navbar');
+    
+    if (navbar && navLinks) {
+        navbar.insertBefore(navToggle, navLinks);
+        
+        navToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            navToggle.innerHTML = navLinks.classList.contains('active') 
+                ? '<i class="fas fa-times"></i>' 
+                : '<i class="fas fa-bars"></i>';
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!navbar.contains(e.target) && navLinks.classList.contains('active')) {
+                navLinks.classList.remove('active');
+                navToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+        });
+
+        // Close mobile menu when window is resized to desktop size
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768 && navLinks.classList.contains('active')) {
+                navLinks.classList.remove('active');
+                navToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+        });
+    }
 });

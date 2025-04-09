@@ -1,0 +1,126 @@
+{
+  "bowsers": [
+    {
+      "id": "BWR001",
+      "number": "WB-2025-001",
+      "capacity": 5000,
+      "currentLevel": 4500,
+      "status": "active",
+      "manufacturer": "AquaSystem",
+      "model": "AS-5000",
+      "lastMaintenance": "2025-04-01",
+      "nextMaintenance": "2025-06-01",
+      "owner": "Region North",
+      "notes": "Regular maintenance completed"
+    },
+    {
+      "id": "BWR002",
+      "number": "WB-2025-002",
+      "capacity": 7500,
+      "currentLevel": 7000,
+      "status": "deployed",
+      "manufacturer": "HydraTech",
+      "model": "HT-7500",
+      "lastMaintenance": "2025-03-01",
+      "nextMaintenance": "2025-05-01",
+      "owner": "Region East",
+      "notes": "Deployed to Riverside Community Center"
+    },
+    {
+      "id": "BWR003",
+      "number": "WB-2025-003",
+      "capacity": 5000,
+      "currentLevel": 2500,
+      "status": "maintenance",
+      "manufacturer": "AquaSystem",
+      "model": "AS-5000",
+      "lastMaintenance": "2025-03-10",
+      "nextMaintenance": "2025-05-10",
+      "owner": "Region West",
+      "notes": "Pump needs replacement"
+    },
+    {
+      "id": "BWR004",
+      "number": "WB-2025-004",
+      "capacity": 10000,
+      "currentLevel": 9500,
+      "status": "standby",
+      "manufacturer": "HydraTech",
+      "model": "HT-10000",
+      "lastMaintenance": "2025-03-05",
+      "nextMaintenance": "2025-05-05",
+      "owner": "Region South",
+      "notes": "Ready for emergency deployment"
+    }
+  ],
+  "locations": [
+    {
+      "id": "LOC001",
+      "name": "Riverside Community Center",
+      "address": "123 Riverside Lane, Rivertown",
+      "coordinates": {
+        "lat": 51.5074,
+        "lng": -0.1278
+      },
+      "type": "community",
+      "status": "active",
+      "bowserId": "BWR002"
+    },
+    {
+      "id": "LOC002",
+      "name": "Hillside Hospital",
+      "address": "456 Hospital Road, Hillside",
+      "coordinates": {
+        "lat": 51.5214,
+        "lng": -0.1419
+      },
+      "type": "hospital",
+      "status": "standby",
+      "bowserId": null
+    },
+    {
+      "id": "LOC003",
+      "name": "Eastside School",
+      "address": "789 School Street, Eastside",
+      "coordinates": {
+        "lat": 51.5315,
+        "lng": -0.1210
+      },
+      "type": "school",
+      "status": "inactive",
+      "bowserId": null
+    }
+  ],
+  "maintenance": [
+    {
+      "id": "MNT001",
+      "bowserId": "BWR001",
+      "date": "2025-04-01",
+      "type": "routine",
+      "description": "Regular maintenance check",
+      "technician": "John Smith",
+      "cost": 250,
+      "status": "completed"
+    },
+    {
+      "id": "MNT002",
+      "bowserId": "BWR003",
+      "date": "2025-03-10",
+      "type": "repair",
+      "description": "Pump malfunction",
+      "technician": "Sarah Johnson",
+      "cost": 750,
+      "status": "in-progress"
+    },
+    {
+      "id": "MNT003",
+      "bowserId": "BWR002",
+      "date": "2025-03-01",
+      "type": "routine",
+      "description": "Regular maintenance check",
+      "technician": "John Smith",
+      "cost": 250,
+      "status": "completed"
+    }
+  ]
+}

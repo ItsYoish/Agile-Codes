@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AquaAlert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
+        <h1 class="h3 mb-0"><i class="fas fa-tachometer-alt me-2"></i>Emergency Water Bowser Dashboard</h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" id="refreshDashboard">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">Active Bowsers</h5>
+                        <div class="rounded-circle bg-white bg-opacity-25 p-2">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                    </div>
+                    <h3 class="display-6 mb-0" id="activeBowsers">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">Maintenance Due</h5>
+                        <div class="rounded-circle bg-white bg-opacity-25 p-2">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                    </div>
+                    <h3 class="display-6 mb-0" id="maintenanceDue">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">Active Locations</h5>
+                        <div class="rounded-circle bg-white bg-opacity-25 p-2">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                    </div>
+                    <h3 class="display-6 mb-0" id="activeLocations">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">Emergency Alerts</h5>
+                        <div class="rounded-circle bg-white bg-opacity-25 p-2">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <h3 class="display-6 mb-0" id="emergencyAlerts">0</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row g-4">
+        <!-- Map Overview -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Bowser Locations</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary active" data-view="map">
+                            <i class="fas fa-map"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" data-view="list">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="bowserMap" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Activity</h5>
+                    <button class="btn btn-sm btn-outline-primary" id="viewAllActivity">
+                        View All
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="activity-feed" id="activityFeed">
+                        <!-- Activity items will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance Schedule -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Upcoming Maintenance</h5>
+                    <a href="/maintenance" class="btn btn-sm btn-outline-primary">View Schedule</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Bowser</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maintenanceTable">
+                                <!-- Maintenance records will be dynamically added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emergency Alerts -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Emergency Alerts</h5>
+                    <button class="btn btn-sm btn-outline-danger" id="viewAllAlerts">View All</button>
+                </div>
+                <div class="card-body">
+                    <div id="emergencyAlertsList">
+                        <!-- Emergency alerts will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

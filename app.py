@@ -1,3 +1,4 @@
+import uuid
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -9,11 +10,86 @@ from datetime import datetime, timedelta
 from random import randint
 import os
 from dotenv import load_dotenv
+from models.json_models import json_handler
+from routes.api_routes import api as api_blueprint
+
+# Initialize JSON data store
+if not os.path.exists('data'):
+    os.makedirs('data')
+
+# Define data models as type hints for JSON data
+class Bowser:
+    id: str
+    number: str
+    capacity: float
+    current_level: float
+    status: str
+    owner: str
+    last_maintenance: str
+    notes: str
+
+class Location:
+    id: str
+    name: str
+    address: str
+    latitude: float
+    longitude: float
+    type: str
+
+class Maintenance:
+    id: str
+    bowser_id: str
+    scheduled_date: str
+    type: str
+    description: str
+    status: str
+    assigned_to: str
+
+class Deployment:
+    id: str
+    bowser_id: str
+    location_id: str
+    start_date: str
+    end_date: str
+    status: str
+    priority: str
+    notes: str
+
+class Invoice:
+    """Invoice data model for JSON storage"""
+    def __init__(self, invoice_number=None, client_name=None, issue_date=None, due_date=None, 
+                 amount=None, status='pending', notes='', deployment_id=None):
+        self.id = str(uuid.uuid4())
+        self.invoice_number = invoice_number
+        self.client_name = client_name
+        self.issue_date = issue_date
+        self.due_date = due_date
+        self.amount = amount
+        self.status = status
+        self.notes = notes
+        self.deployment_id = deployment_id
+        
+    def to_dict(self):
+        """Convert invoice to dictionary for JSON storage"""
+        return {
+            'id': self.id,
+            'invoice_number': self.invoice_number,
+            'client_name': self.client_name,
+            'issue_date': self.issue_date.isoformat() if self.issue_date else None,
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'amount': self.amount,
+            'status': self.status,
+            'notes': self.notes,
+            'deployment_id': self.deployment_id
+        }
 
 load_dotenv()  # Load environment variables from .env file
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a_super_secret_key_for_dev_change_me') # Needed for sessions
+
+# Register API routes blueprint
+app.register_blueprint(api_blueprint)
 
 # Database configuration - use environment variable or default
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///aquaalert.db')
@@ -34,7 +110,7 @@ login_manager.login_message_category = 'info' # Flash message category
 
 # --- Database Models ---
 
-# User Model for Authentication
+# User Model for Authentication - Keep in SQLite
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -52,141 +128,7 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.username} ({self.role})>'
 
-# Database Models
-class Bowser(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    number = db.Column(db.String(20), nullable=False)
-    capacity = db.Column(db.Integer, nullable=False)
-    current_level = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String(20), nullable=False)
-    owner = db.Column(db.String(100))
-    last_maintenance = db.Column(db.Date)
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class Location(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    address = db.Column(db.String(200))
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
-    type = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class Maintenance(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    bowser_id = db.Column(db.Integer, db.ForeignKey('bowser.id'), nullable=False)
-    scheduled_date = db.Column(db.Date, nullable=False)
-    type = db.Column(db.String(50))
-    description = db.Column(db.Text)
-    status = db.Column(db.String(20), default='scheduled')
-    assigned_to = db.Column(db.String(100))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    bowser = db.relationship('Bowser', backref=db.backref('maintenance_records', lazy=True))
-
-class Deployment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    bowser_id = db.Column(db.Integer, db.ForeignKey('bowser.id'), nullable=False)
-    location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=False)
-    start_date = db.Column(db.Date, nullable=False)
-    end_date = db.Column(db.Date)
-    status = db.Column(db.String(20), default='active')
-    priority = db.Column(db.String(20), default='normal')  # 'low', 'normal', 'high', 'emergency'
-    emergency_reason = db.Column(db.Text)  # Reason for emergency priority
-    population_affected = db.Column(db.Integer)  # Estimated number of people affected
-    expected_duration = db.Column(db.Integer)  # Expected duration in days
-    alternative_sources = db.Column(db.Boolean, default=False)  # Are alternative water sources available?
-    vulnerability_index = db.Column(db.Integer, default=0)  # 0-10 vulnerability score
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    bowser = db.relationship('Bowser', backref=db.backref('deployments', lazy=True))
-    location = db.relationship('Location', backref=db.backref('deployments', lazy=True))
-    
-    @property
-    def priority_score(self):
-        """Calculate emergency priority score based on various factors"""
-        # Start with base score based on priority level
-        base_score = {
-            'low': 10,
-            'normal': 30,
-            'high': 60,
-            'emergency': 90
-        }.get(self.priority, 30)
-        
-        # Add points for population affected (1 point per 100 people)
-        population_score = min(50, (self.population_affected or 0) // 100)
-        
-        # Add vulnerability index points (0-10)
-        vulnerability_score = self.vulnerability_index or 0
-        
-        # Subtract points if alternative sources are available
-        alternative_penalty = -15 if self.alternative_sources else 0
-        
-        # Calculate total score (capped at 100)
-        total = min(100, base_score + population_score + vulnerability_score + alternative_penalty)
-        
-        return total
-
-class Invoice(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    invoice_number = db.Column(db.String(50), nullable=False, unique=True)
-    client_name = db.Column(db.String(100), nullable=False)
-    issue_date = db.Column(db.Date, nullable=False)
-    due_date = db.Column(db.Date, nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    status = db.Column(db.String(20), default='pending')  # 'pending', 'paid', 'overdue'
-    deployment_id = db.Column(db.Integer, db.ForeignKey('deployment.id'))
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    deployment = db.relationship('Deployment', backref=db.backref('invoices', lazy=True))
-
-class MutualAidScheme(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    start_date = db.Column(db.Date, nullable=False)
-    end_date = db.Column(db.Date)
-    contribution_amount = db.Column(db.Float, nullable=False)
-    balance = db.Column(db.Float, default=0.0)
-    status = db.Column(db.String(20), default='active')  # 'active', 'inactive', 'pending'
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class MutualAidContribution(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    scheme_id = db.Column(db.Integer, db.ForeignKey('mutual_aid_scheme.id'), nullable=False)
-    contributor_name = db.Column(db.String(100), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    contribution_date = db.Column(db.Date, nullable=False)
-    receipt_number = db.Column(db.String(50))
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    scheme = db.relationship('MutualAidScheme', backref=db.backref('contributions', lazy=True))
-
-class Partner(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    contact_person = db.Column(db.String(100))
-    email = db.Column(db.String(100))
-    phone = db.Column(db.String(20))
-    balance = db.Column(db.Float, default=0.0)
-    partnership_start = db.Column(db.Date)
-    status = db.Column(db.String(20), default='active')  # 'active', 'inactive', 'suspended'
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class Alert(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    message = db.Column(db.Text, nullable=False)
-    priority = db.Column(db.String(20), default='normal')  # 'low', 'normal', 'high', 'emergency'
-    status = db.Column(db.String(20), default='active')  # 'active', 'acknowledged', 'resolved'
-    target_users = db.Column(db.String(100))  # 'admin', 'maintenance', 'public', 'all'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    resolved_at = db.Column(db.DateTime)
+# All other models are handled by JSON storage through json_handler
 
 # Flask-Login User Loader Callback
 @login_manager.user_loader
@@ -311,8 +253,8 @@ def dashboard():
 @app.route('/public_map')
 def public_map():
     """Public view of bowser locations and status"""
-    bowsers = Bowser.query.all()
-    locations = Location.query.all()
+    bowsers = json_handler.get_all('bowsers')
+    locations = json_handler.get_all('locations')
     return render_template('public.html', bowsers=bowsers, locations=locations)
 
 # --- Staff Routes ---
@@ -320,22 +262,22 @@ def public_map():
 @staff_required
 def management():
     """Staff dashboard for bowser management"""
-    bowsers = Bowser.query.all()
+    bowsers = json_handler.get_all('bowsers')
     return render_template('management.html', bowsers=bowsers, title='Bowser Management')
 
 @app.route('/maintenance')
 @staff_required
 def maintenance():
     """Maintenance scheduling and tracking"""
-    maintenance_records = Maintenance.query.all()
-    bowsers = Bowser.query.all()
+    maintenance_records = json_handler.get_all('maintenance')
+    bowsers = json_handler.get_all('bowsers')
     return render_template('maintenance.html', records=maintenance_records, bowsers=bowsers, title='Maintenance Management')
 
 @app.route('/locations/manage')
 @staff_required
 def manage_locations():
     """Location management interface"""
-    locations = Location.query.all()
+    locations = json_handler.get_all('locations')
     return render_template('locations.html', locations=locations)
 
 # --- Admin Routes ---
@@ -350,16 +292,18 @@ def admin_users():
 @admin_required
 def finance():
     """Financial management interface"""
-    invoices = Invoice.query.all()
-    schemes = MutualAidScheme.query.all()
+    invoices = json_handler.get_all('invoices')
+    schemes = json_handler.get_all('mutual_aid_schemes')
     return render_template('finance.html', invoices=invoices, schemes=schemes)
 
 @app.route('/finance/invoices')
 @admin_required
 def manage_invoices():
     """Invoice management interface"""
-    invoices = Invoice.query.order_by(Invoice.issue_date.desc()).all()
-    deployments = Deployment.query.all()
+    invoices = json_handler.get_all('invoices')
+    # Sort invoices by issue_date
+    invoices.sort(key=lambda x: x['issue_date'], reverse=True)
+    deployments = json_handler.get_all('deployments')
     return render_template('manage_invoices.html', invoices=invoices, deployments=deployments)
 
 @app.route('/finance/invoices/create', methods=['GET', 'POST'])
@@ -492,10 +436,10 @@ def admin_reports():
 @admin_required
 def emergency_priority():
     """Emergency priority management interface"""
-    # Get all deployments ordered by priority score (highest first)
-    deployments = Deployment.query.filter(Deployment.status == 'active').all()
-    # Sort deployments by priority_score (can't use order_by since it's a property)
-    deployments.sort(key=lambda d: d.priority_score, reverse=True)
+    # Get all deployments
+    deployments = json_handler.query('deployments', {'status': 'active'})
+    # Sort deployments by priority (since we're using JSON storage)
+    deployments.sort(key=lambda d: d.get('priority', 0), reverse=True)
     
     return render_template('emergency_priority.html', deployments=deployments)
 
@@ -967,16 +911,30 @@ def initialize_database(force_reset=False):
     Args:
         force_reset (bool): If True, will drop all tables and recreate with fresh sample data
     """
-    # If force reset is requested, drop all tables first
+    # If force reset is requested, reset both SQLite and JSON stores
     if force_reset:
         print('Forcing database reset...')
+        # Reset SQLite (User table)
         db.drop_all()
+        # Reset JSON store
+        json_handler.data = {
+            'bowsers': [],
+            'locations': [],
+            'maintenance': [],
+            'deployments': [],
+            'invoices': [],
+            'mutual_aid_schemes': [],
+            'mutual_aid_contributions': [],
+            'partners': [],
+            'alerts': []
+        }
+        json_handler.save_data()
     
-    # Create tables if they don't exist
+    # Create SQLite tables if they don't exist
     db.create_all()
     
-    # Check if we already have data (check for bowsers)
-    existing_bowsers = Bowser.query.first()
+    # Check if we already have data
+    existing_bowsers = json_handler.get_all('bowsers')
     
     # Check if users exist first
     admin_user = User.query.filter_by(username='admin').first()
@@ -1012,422 +970,419 @@ def initialize_database(force_reset=False):
         db.session.commit()
         print('Users created successfully!')
         
-    if existing_bowsers is None:
+    if not existing_bowsers:
         print('Creating initial sample data...')
         
         # Add sample data
         # Create bowsers with various statuses for testing
         bowsers = [
-            Bowser(
-                number='BWS001',
-                capacity=5000,
-                current_level=5000,
-                status='active',
-                owner='Region North',
-                last_maintenance=datetime.strptime('2025-04-07', '%Y-%m-%d').date(),
-                notes='Regular maintenance completed'
-            ),
-            Bowser(
-                number='BWS002',
-                capacity=7500,
-                current_level=7200,
-                status='active',
-                owner='Region South',
-                last_maintenance=datetime.strptime('2025-03-21', '%Y-%m-%d').date(),
-                notes='Scheduled maintenance in 2 weeks'
-            ),
-            Bowser(
-                number='BWS003',
-                capacity=5000,
-                current_level=2500,
-                status='maintenance',
-                owner='Region East',
-                last_maintenance=datetime.strptime('2025-03-10', '%Y-%m-%d').date(),
-                notes='Currently undergoing repairs'
-            ),
-            Bowser(
-                number='BWS004',
-                capacity=10000,
-                current_level=9800,
-                status='active',
-                owner='Region West',
-                last_maintenance=datetime.strptime('2025-04-05', '%Y-%m-%d').date(),
-                notes='New bowser, recently commissioned'
-            ),
-            Bowser(
-                number='BWS005',
-                capacity=7500,
-                current_level=7500,
-                status='standby',
-                owner='Region North',
-                last_maintenance=datetime.strptime('2025-04-02', '%Y-%m-%d').date(),
-                notes='Ready for emergency deployment'
-            ),
-            Bowser(
-                number='BWS006',
-                capacity=5000,
-                current_level=4200,
-                status='active',
-                owner='Region South',
-                last_maintenance=datetime.strptime('2025-03-15', '%Y-%m-%d').date(),
-                notes='Regular service scheduled'
-            ),
-            Bowser(
-                number='BWS007',
-                capacity=5000,
-                current_level=0,
-                status='out_of_service',
-                owner='Region East',
-                last_maintenance=datetime.strptime('2025-02-28', '%Y-%m-%d').date(),
-                notes='Major repair needed - tank leak'
-            )
+            {
+                'number': 'BWS001',
+                'capacity': 5000,
+                'current_level': 5000,
+                'status': 'active',
+                'owner': 'Region North',
+                'last_maintenance': datetime.strptime('2025-04-07', '%Y-%m-%d').isoformat(),
+                'notes': 'Regular maintenance completed'
+            },
+            {
+                'number': 'BWS002',
+                'capacity': 7500,
+                'current_level': 7200,
+                'status': 'active',
+                'owner': 'Region South',
+                'last_maintenance': datetime.strptime('2025-03-21', '%Y-%m-%d').isoformat(),
+                'notes': 'Scheduled maintenance in 2 weeks'
+            },
+            {
+                'number': 'BWS003',
+                'capacity': 5000,
+                'current_level': 2500,
+                'status': 'maintenance',
+                'owner': 'Region East',
+                'last_maintenance': datetime.strptime('2025-03-10', '%Y-%m-%d').isoformat(),
+                'notes': 'Currently undergoing repairs'
+            },
+            {
+                'number': 'BWS004',
+                'capacity': 10000,
+                'current_level': 9800,
+                'status': 'active',
+                'owner': 'Region West',
+                'last_maintenance': datetime.strptime('2025-04-05', '%Y-%m-%d').isoformat(),
+                'notes': 'New bowser, recently commissioned'
+            },
+            {
+                'number': 'BWS005',
+                'capacity': 7500,
+                'current_level': 7500,
+                'status': 'standby',
+                'owner': 'Region North',
+                'last_maintenance': datetime.strptime('2025-04-02', '%Y-%m-%d').isoformat(),
+                'notes': 'Ready for emergency deployment'
+            },
+            {
+                'number': 'BWS006',
+                'capacity': 5000,
+                'current_level': 4200,
+                'status': 'active',
+                'owner': 'Region South',
+                'last_maintenance': datetime.strptime('2025-03-15', '%Y-%m-%d').isoformat(),
+                'notes': 'Regular service scheduled'
+            },
+            {
+                'number': 'BWS007',
+                'capacity': 5000,
+                'current_level': 0,
+                'status': 'out_of_service',
+                'owner': 'Region East',
+                'last_maintenance': datetime.strptime('2025-02-28', '%Y-%m-%d').isoformat(),
+                'notes': 'Major repair needed - tank leak'
+            }
         ]
         for bowser in bowsers:
-            db.session.add(bowser)
+            json_handler.create('bowsers', bowser)
         
         # Create locations with different types
         locations = [
-            Location(
-                name='North Region HQ',
-                address='123 North Street',
-                latitude=51.505,
-                longitude=-0.09,
-                type='headquarters'
-            ),
-            Location(
-                name='City Hospital',
-                address='456 Medical Drive',
-                latitude=51.51,
-                longitude=-0.11,
-                type='healthcare'
-            ),
-            Location(
-                name='Community Center',
-                address='789 Community Road',
-                latitude=51.52,
-                longitude=-0.12,
-                type='community'
-            ),
-            Location(
-                name='South Water Treatment Plant',
-                address='10 Industrial Way',
-                latitude=51.48,
-                longitude=-0.13,
-                type='infrastructure'
-            ),
-            Location(
-                name='East Region School',
-                address='25 Education Lane',
-                latitude=51.51,
-                longitude=-0.05,
-                type='education'
-            ),
-            Location(
-                name='West Region Residential Complex',
-                address='42 Housing Estate',
-                latitude=51.49,
-                longitude=-0.15,
-                type='residential'
-            ),
-            Location(
-                name='Emergency Response Center',
-                address='112 Emergency Road',
-                latitude=51.50,
-                longitude=-0.10,
-                type='emergency'
-            )
+            {
+                'name': 'North Region HQ',
+                'address': '123 North Street',
+                'latitude': 51.505,
+                'longitude': -0.09,
+                'type': 'headquarters'
+            },
+            {
+                'name': 'City Hospital',
+                'address': '456 Medical Drive',
+                'latitude': 51.51,
+                'longitude': -0.11,
+                'type': 'healthcare'
+            },
+            {
+                'name': 'Community Center',
+                'address': '789 Community Road',
+                'latitude': 51.52,
+                'longitude': -0.12,
+                'type': 'community'
+            },
+            {
+                'name': 'South Water Treatment Plant',
+                'address': '10 Industrial Way',
+                'latitude': 51.48,
+                'longitude': -0.13,
+                'type': 'infrastructure'
+            },
+            {
+                'name': 'East Region School',
+                'address': '25 Education Lane',
+                'latitude': 51.51,
+                'longitude': -0.05,
+                'type': 'education'
+            },
+            {
+                'name': 'West Region Residential Complex',
+                'address': '42 Housing Estate',
+                'latitude': 51.49,
+                'longitude': -0.15,
+                'type': 'residential'
+            },
+            {
+                'name': 'Emergency Response Center',
+                'address': '112 Emergency Road',
+                'latitude': 51.50,
+                'longitude': -0.10,
+                'type': 'emergency'
+            }
         ]
         for location in locations:
-            db.session.add(location)
+            json_handler.create('locations', location)
         
-        db.session.commit()
-        
-        # Add maintenance records after bowsers are committed to get IDs
-        bowser_objects = Bowser.query.all()
-        location_objects = Location.query.all()
+        # Get created bowsers and locations from JSON store
+        bowser_objects = json_handler.get_all('bowsers')
+        location_objects = json_handler.get_all('locations')
         
         # Add maintenance records with various statuses and types
         maintenance_records = [
-            Maintenance(
-                bowser_id=bowser_objects[0].id,
-                scheduled_date=datetime.strptime('2025-05-01', '%Y-%m-%d').date(),
-                type='routine',
-                description='Quarterly maintenance check',
-                status='scheduled',
-                assigned_to='Maintenance Team A'
-            ),
-            Maintenance(
-                bowser_id=bowser_objects[1].id,
-                scheduled_date=datetime.strptime('2025-04-15', '%Y-%m-%d').date(),
-                type='repair',
-                description='Fix leaking valve',
-                status='pending',
-                assigned_to='Maintenance Team B'
-            ),
-            Maintenance(
-                bowser_id=bowser_objects[2].id,
-                scheduled_date=datetime.strptime('2025-04-10', '%Y-%m-%d').date(),
-                type='emergency',
-                description='Replace broken pump',
-                status='in_progress',
-                assigned_to='Emergency Response Team'
-            ),
-            Maintenance(
-                bowser_id=bowser_objects[3].id,
-                scheduled_date=datetime.strptime('2025-04-05', '%Y-%m-%d').date(),
-                type='inspection',
-                description='Annual safety inspection',
-                status='completed',
-                assigned_to='Safety Inspector'
-            ),
-            Maintenance(
-                bowser_id=bowser_objects[4].id,
-                scheduled_date=datetime.strptime('2025-05-15', '%Y-%m-%d').date(),
-                type='routine',
-                description='Filter replacement',
-                status='scheduled',
-                assigned_to='Maintenance Team C'
-            ),
-            Maintenance(
-                bowser_id=bowser_objects[6].id,
-                scheduled_date=datetime.strptime('2025-04-12', '%Y-%m-%d').date(),
-                type='major_repair',
-                description='Tank replacement due to severe leak',
-                status='scheduled',
-                assigned_to='Specialist Repair Team'
-            )
+            {
+                'bowser_id': bowser_objects[0]['id'],
+                'scheduled_date': datetime.strptime('2025-05-01', '%Y-%m-%d').isoformat(),
+                'type': 'routine',
+                'description': 'Quarterly maintenance check',
+                'status': 'scheduled',
+                'assigned_to': 'Maintenance Team A'
+            },
+            {
+                'bowser_id': bowser_objects[1]['id'],
+                'scheduled_date': datetime.strptime('2025-04-15', '%Y-%m-%d').isoformat(),
+                'type': 'repair',
+                'description': 'Fix leaking valve',
+                'status': 'pending',
+                'assigned_to': 'Maintenance Team B'
+            },
+            {
+                'bowser_id': bowser_objects[2]['id'],
+                'scheduled_date': datetime.strptime('2025-04-10', '%Y-%m-%d').isoformat(),
+                'type': 'emergency',
+                'description': 'Replace broken pump',
+                'status': 'in_progress',
+                'assigned_to': 'Emergency Response Team'
+            },
+            {
+                'bowser_id': bowser_objects[3]['id'],
+                'scheduled_date': datetime.strptime('2025-04-05', '%Y-%m-%d').isoformat(),
+                'type': 'inspection',
+                'description': 'Annual safety inspection',
+                'status': 'completed',
+                'assigned_to': 'Safety Inspector'
+            },
+            {
+                'bowser_id': bowser_objects[4]['id'],
+                'scheduled_date': datetime.strptime('2025-05-15', '%Y-%m-%d').isoformat(),
+                'type': 'routine',
+                'description': 'Filter replacement',
+                'status': 'scheduled',
+                'assigned_to': 'Maintenance Team C'
+            },
+            {
+                'bowser_id': bowser_objects[6]['id'],
+                'scheduled_date': datetime.strptime('2025-04-12', '%Y-%m-%d').isoformat(),
+                'type': 'major_repair',
+                'description': 'Tank replacement due to severe leak',
+                'status': 'scheduled',
+                'assigned_to': 'Specialist Repair Team'
+            }
         ]
         for record in maintenance_records:
-            db.session.add(record)
+            json_handler.create('maintenance', record)
         
         # Add sample deployments with various priorities and statuses
         deployments = [
-            Deployment(
-                bowser_id=bowser_objects[0].id,
-                location_id=location_objects[0].id,
-                start_date=datetime.strptime('2025-04-01', '%Y-%m-%d').date(),
-                end_date=None,
-                status='active',
-                priority='emergency',
-                notes='Emergency water supply due to pipe burst'
-            ),
-            Deployment(
-                bowser_id=bowser_objects[1].id, 
-                location_id=location_objects[1].id,
-                start_date=datetime.strptime('2025-04-05', '%Y-%m-%d').date(),
-                end_date=None,
-                status='active',
-                priority='high',
-                notes='Critical water supply needed for hospital wing'
-            ),
-            Deployment(
-                bowser_id=bowser_objects[3].id,
-                location_id=location_objects[2].id,
-                start_date=datetime.strptime('2025-04-03', '%Y-%m-%d').date(),
-                end_date=None,
-                status='active',
-                priority='medium',
-                notes='Community center water supply'
-            ),
-            Deployment(
-                bowser_id=bowser_objects[5].id,
-                location_id=location_objects[5].id,
-                start_date=datetime.strptime('2025-04-02', '%Y-%m-%d').date(),
-                end_date=None,
-                status='active',
-                priority='low',
-                notes='Scheduled water delivery for residential complex'
-            ),
-            Deployment(
-                bowser_id=bowser_objects[4].id,
-                location_id=location_objects[6].id,
-                start_date=datetime.strptime('2025-04-07', '%Y-%m-%d').date(),
-                end_date=None,
-                status='pending',
-                priority='high',
-                notes='Standby deployment for emergency response center'
-            ),
+            {
+                'bowser_id': bowser_objects[0]['id'],
+                'location_id': location_objects[0]['id'],
+                'start_date': datetime.strptime('2025-04-01', '%Y-%m-%d').isoformat(),
+                'end_date': None,
+                'status': 'active',
+                'priority': 'emergency',
+                'notes': 'Emergency water supply due to pipe burst'
+            },
+            {
+                'bowser_id': bowser_objects[1]['id'],
+                'location_id': location_objects[1]['id'],
+                'start_date': datetime.strptime('2025-04-05', '%Y-%m-%d').isoformat(),
+                'end_date': None,
+                'status': 'active',
+                'priority': 'high',
+                'notes': 'Critical water supply needed for hospital wing'
+            },
+            {
+                'bowser_id': bowser_objects[3]['id'],
+                'location_id': location_objects[2]['id'],
+                'start_date': datetime.strptime('2025-04-03', '%Y-%m-%d').isoformat(),
+                'end_date': None,
+                'status': 'active',
+                'priority': 'medium',
+                'notes': 'Community center water supply'
+            },
+            {
+                'bowser_id': bowser_objects[5]['id'],
+                'location_id': location_objects[5]['id'],
+                'start_date': datetime.strptime('2025-04-02', '%Y-%m-%d').isoformat(),
+                'end_date': None,
+                'status': 'active',
+                'priority': 'low',
+                'notes': 'Scheduled water delivery for residential complex'
+            },
+            {
+                'bowser_id': bowser_objects[4]['id'],
+                'location_id': location_objects[6]['id'],
+                'start_date': datetime.strptime('2025-04-07', '%Y-%m-%d').isoformat(),
+                'end_date': None,
+                'status': 'pending',
+                'priority': 'high',
+                'notes': 'Standby deployment for emergency response center'
+            },
             # Historical deployment (completed)
-            Deployment(
-                bowser_id=bowser_objects[0].id,
-                location_id=location_objects[3].id,
-                start_date=datetime.strptime('2025-03-15', '%Y-%m-%d').date(),
-                end_date=datetime.strptime('2025-03-25', '%Y-%m-%d').date(),
-                status='completed',
-                priority='medium',
-                notes='Temporary water supply during maintenance'
-            )
+            {
+                'bowser_id': bowser_objects[0]['id'],
+                'location_id': location_objects[3]['id'],
+                'start_date': datetime.strptime('2025-03-15', '%Y-%m-%d').isoformat(),
+                'end_date': datetime.strptime('2025-03-25', '%Y-%m-%d').isoformat(),
+                'status': 'completed',
+                'priority': 'medium',
+                'notes': 'Temporary water supply during maintenance'
+            }
         ]
         
         for deployment in deployments:
-            db.session.add(deployment)
+            json_handler.create('deployments', deployment)
         
         # Update bowser statuses to match their deployments
-        bowser_objects[0].status = 'deployed'
-        bowser_objects[1].status = 'deployed'
-        bowser_objects[3].status = 'deployed'
-        bowser_objects[5].status = 'deployed'
+        for bowser in bowser_objects:
+            if bowser['id'] in [bowser_objects[0]['id'], bowser_objects[1]['id'], bowser_objects[3]['id'], bowser_objects[5]['id']]:
+                bowser['status'] = 'deployed'
+                json_handler.update('bowsers', bowser['id'], bowser)
         
         # Add sample alerts
         alerts = [
-            Alert(
-                title='Emergency Deployment Needed',
-                message='Water outage reported in North Region - emergency bowser deployment required',
-                priority='high',
-                status='active',
-                target_users='admin'
-            ),
-            Alert(
-                title='Maintenance Reminder',
-                message='Scheduled maintenance for BWS002 due next week',
-                priority='normal',
-                status='active',
-                target_users='maintenance'
-            ),
-            Alert(
-                title='Low Water Level',
-                message='Bowser BWS003 water level below 25%',
-                priority='normal',
-                status='active',
-                target_users='all'
-            )
+            {
+                'title': 'Emergency Deployment Needed',
+                'message': 'Water outage reported in North Region - emergency bowser deployment required',
+                'priority': 'high',
+                'status': 'active',
+                'target_users': 'admin'
+            },
+            {
+                'title': 'Maintenance Reminder',
+                'message': 'Scheduled maintenance for BWS002 due next week',
+                'priority': 'normal',
+                'status': 'active',
+                'target_users': 'maintenance'
+            },
+            {
+                'title': 'Low Water Level',
+                'message': 'Bowser BWS003 water level below 25%',
+                'priority': 'normal',
+                'status': 'active',
+                'target_users': 'all'
+            }
         ]
         for alert in alerts:
-            db.session.add(alert)
+            json_handler.create('alerts', alert)
         
         # Add sample mutual aid schemes with various statuses
         schemes = [
-            MutualAidScheme(
-                name='North Region Emergency Fund',
-                start_date=datetime.strptime('2025-01-01', '%Y-%m-%d').date(),
-                end_date=datetime.strptime('2025-12-31', '%Y-%m-%d').date(),
-                contribution_amount=500.00,
-                balance=2500.00,
-                status='active',
-                notes='Mutual aid scheme for emergency water supply in North Region'
-            ),
-            MutualAidScheme(
-                name='Community Support Fund',
-                start_date=datetime.strptime('2025-02-15', '%Y-%m-%d').date(),
-                end_date=None,
-                contribution_amount=250.00,
-                balance=1250.00,
-                status='active',
-                notes='Ongoing community support scheme'
-            ),
-            MutualAidScheme(
-                name='South Region Drought Relief',
-                start_date=datetime.strptime('2025-03-01', '%Y-%m-%d').date(),
-                end_date=datetime.strptime('2025-09-30', '%Y-%m-%d').date(),
-                contribution_amount=750.00,
-                balance=3000.00,
-                status='active',
-                notes='Temporary fund for drought relief efforts'
-            ),
-            MutualAidScheme(
-                name='East-West Collaborative Fund',
-                start_date=datetime.strptime('2024-11-01', '%Y-%m-%d').date(),
-                end_date=datetime.strptime('2025-10-31', '%Y-%m-%d').date(),
-                contribution_amount=1000.00,
-                balance=5000.00,
-                status='active',
-                notes='Joint fund between East and West regions'
-            ),
-            MutualAidScheme(
-                name='Winter Emergency Fund',
-                start_date=datetime.strptime('2024-12-01', '%Y-%m-%d').date(),
-                end_date=datetime.strptime('2025-02-28', '%Y-%m-%d').date(),
-                contribution_amount=600.00,
-                balance=0.00,
-                status='completed',
-                notes='Fund for winter freeze emergencies - now closed'
-            )
+            {
+                'name': 'North Region Emergency Fund',
+                'start_date': datetime.strptime('2025-01-01', '%Y-%m-%d').isoformat(),
+                'end_date': datetime.strptime('2025-12-31', '%Y-%m-%d').isoformat(),
+                'contribution_amount': 500.00,
+                'balance': 2500.00,
+                'status': 'active',
+                'notes': 'Mutual aid scheme for emergency water supply in North Region'
+            },
+            {
+                'name': 'Community Support Fund',
+                'start_date': datetime.strptime('2025-02-15', '%Y-%m-%d').isoformat(),
+                'end_date': None,
+                'contribution_amount': 250.00,
+                'balance': 1250.00,
+                'status': 'active',
+                'notes': 'Ongoing community support scheme'
+            },
+            {
+                'name': 'South Region Drought Relief',
+                'start_date': datetime.strptime('2025-03-01', '%Y-%m-%d').isoformat(),
+                'end_date': datetime.strptime('2025-09-30', '%Y-%m-%d').isoformat(),
+                'contribution_amount': 750.00,
+                'balance': 3000.00,
+                'status': 'active',
+                'notes': 'Temporary fund for drought relief efforts'
+            },
+            {
+                'name': 'East-West Collaborative Fund',
+                'start_date': datetime.strptime('2024-11-01', '%Y-%m-%d').isoformat(),
+                'end_date': datetime.strptime('2025-10-31', '%Y-%m-%d').isoformat(),
+                'contribution_amount': 1000.00,
+                'balance': 5000.00,
+                'status': 'active',
+                'notes': 'Joint fund between East and West regions'
+            },
+            {
+                'name': 'Winter Emergency Fund',
+                'start_date': datetime.strptime('2024-12-01', '%Y-%m-%d').isoformat(),
+                'end_date': datetime.strptime('2025-02-28', '%Y-%m-%d').isoformat(),
+                'contribution_amount': 600.00,
+                'balance': 0.00,
+                'status': 'completed',
+                'notes': 'Fund for winter freeze emergencies - now closed'
+            }
         ]
         for scheme in schemes:
-            db.session.add(scheme)
+            json_handler.create('mutual_aid_schemes', scheme)
         
-        # Commit to get scheme IDs
-        db.session.commit()
-        scheme_objects = MutualAidScheme.query.all()
+        # Get created scheme IDs
+        scheme_objects = json_handler.get_all('mutual_aid_schemes')
         
         # Note: MutualAidTransaction model not yet implemented
         # Will be added as part of the financial management module implementation
         
         # Add sample contributions
         contributions = [
-            MutualAidContribution(
-                scheme_id=scheme_objects[0].id,
-                contributor_name='North Region Council',
-                amount=500.00,
-                contribution_date=datetime.strptime('2025-03-01', '%Y-%m-%d').date(),
-                receipt_number='CONT-001',
-                notes='Monthly contribution'
-            ),
-            MutualAidContribution(
-                scheme_id=scheme_objects[0].id,
-                contributor_name='City Water Authority',
-                amount=1000.00,
-                contribution_date=datetime.strptime('2025-02-15', '%Y-%m-%d').date(),
-                receipt_number='CONT-002',
-                notes='Quarterly contribution'
-            ),
-            MutualAidContribution(
-                scheme_id=scheme_objects[1].id,
-                contributor_name='Community Center Association',
-                amount=250.00,
-                contribution_date=datetime.strptime('2025-03-10', '%Y-%m-%d').date(),
-                receipt_number='CONT-003',
-                notes='Initial contribution'
-            )
+            {
+                'scheme_id': scheme_objects[0]['id'],
+                'contributor_name': 'North Region Council',
+                'amount': 500.00,
+                'contribution_date': datetime.strptime('2025-03-01', '%Y-%m-%d').date().isoformat(),
+                'receipt_number': 'CONT-001',
+                'notes': 'Monthly contribution'
+            },
+            {
+                'scheme_id': scheme_objects[0]['id'],
+                'contributor_name': 'City Water Authority',
+                'amount': 1000.00,
+                'contribution_date': datetime.strptime('2025-02-15', '%Y-%m-%d').isoformat(),
+                'receipt_number': 'CONT-002',
+                'notes': 'Quarterly contribution'
+            },
+            {
+                'scheme_id': scheme_objects[1]['id'],
+                'contributor_name': 'Community Center Association',
+                'amount': 250.00,
+                'contribution_date': datetime.strptime('2025-03-10', '%Y-%m-%d').isoformat(),
+                'receipt_number': 'CONT-003',
+                'notes': 'Initial contribution'
+            }
         ]
         for contribution in contributions:
-            db.session.add(contribution)
+            json_handler.create('mutual_aid_contributions', contribution)
         
         # Add sample partners
         partners = [
-            Partner(
-                name='Thames Water',
-                contact_person='James Smith',
-                email='james.smith@thameswater.co.uk',
-                phone='020 7123 4567',
-                balance=2500.00,
-                partnership_start=datetime.strptime('2024-01-15', '%Y-%m-%d').date(),
-                status='active',
-                notes='Primary water utility partner for emergency support'
-            ),
-            Partner(
-                name='Severn Trent',
-                contact_person='Emily Johnson',
-                email='e.johnson@severntrent.co.uk',
-                phone='0121 456 7890',
-                balance=-1200.00,
-                partnership_start=datetime.strptime('2024-02-20', '%Y-%m-%d').date(),
-                status='active',
-                notes='Regional partner for Midlands area'
-            ),
-            Partner(
-                name='Yorkshire Water',
-                contact_person='Robert Brown',
-                email='r.brown@yorkshirewater.co.uk',
-                phone='0113 789 0123',
-                balance=850.00,
-                partnership_start=datetime.strptime('2024-03-10', '%Y-%m-%d').date(),
-                status='active',
-                notes='Northern region mutual aid partner'
-            ),
-            Partner(
-                name='United Utilities',
-                contact_person='Sarah Wilson',
-                email='s.wilson@unitedutilities.co.uk',
-                phone='0161 234 5678',
-                balance=1300.00,
-                partnership_start=datetime.strptime('2024-01-05', '%Y-%m-%d').date(),
-                status='active',
-                notes='Northwest region emergency support partner'
-            )
+            {
+                'name': 'Thames Water',
+                'contact_person': 'James Smith',
+                'email': 'james.smith@thameswater.co.uk',
+                'phone': '020 7123 4567',
+                'balance': 2500.00,
+                'partnership_start': datetime.strptime('2024-01-15', '%Y-%m-%d').isoformat(),
+                'status': 'active',
+                'notes': 'Primary water utility partner for emergency support'
+            },
+            {
+                'name': 'Severn Trent',
+                'contact_person': 'Emily Johnson',
+                'email': 'e.johnson@severntrent.co.uk',
+                'phone': '0121 456 7890',
+                'balance': -1200.00,
+                'partnership_start': datetime.strptime('2024-02-20', '%Y-%m-%d').isoformat(),
+                'status': 'active',
+                'notes': 'Regional partner for Midlands area'
+            },
+            {
+                'name': 'Yorkshire Water',
+                'contact_person': 'Robert Brown',
+                'email': 'r.brown@yorkshirewater.co.uk',
+                'phone': '0113 789 0123',
+                'balance': 850.00,
+                'partnership_start': datetime.strptime('2024-03-10', '%Y-%m-%d').isoformat(),
+                'status': 'active',
+                'notes': 'Northern region mutual aid partner'
+            },
+            {
+                'name': 'United Utilities',
+                'contact_person': 'Sarah Wilson',
+                'email': 's.wilson@unitedutilities.co.uk',
+                'phone': '0161 234 5678',
+                'balance': 1300.00,
+                'partnership_start': datetime.strptime('2024-01-05', '%Y-%m-%d').isoformat(),
+                'status': 'active',
+                'notes': 'Northwest region emergency support partner'
+            }
         ]
         for partner in partners:
-            db.session.add(partner)
+            json_handler.create('partners', partner)
         
         # Add sample invoices with various statuses
         invoices = [
@@ -1438,7 +1393,7 @@ def initialize_database(force_reset=False):
                 due_date=datetime.strptime('2025-05-01', '%Y-%m-%d').date(),
                 amount=1500.00,
                 status='pending',
-                deployment_id=deployments[0].id,
+                deployment_id=deployments[0]['id'],
                 notes='Invoice for emergency water supply services'
             ),
             Invoice(
@@ -1448,7 +1403,7 @@ def initialize_database(force_reset=False):
                 due_date=datetime.strptime('2025-04-15', '%Y-%m-%d').date(),
                 amount=2200.00,
                 status='paid',
-                deployment_id=deployments[1].id,
+                deployment_id=deployments[1]['id'],
                 notes='Invoice for scheduled water delivery services'
             ),
             Invoice(
@@ -1458,7 +1413,7 @@ def initialize_database(force_reset=False):
                 due_date=datetime.strptime('2025-05-05', '%Y-%m-%d').date(),
                 amount=950.00,
                 status='pending',
-                deployment_id=deployments[2].id,
+                deployment_id=deployments[2]['id'],
                 notes='Invoice for community water supply'
             ),
             Invoice(
@@ -1468,7 +1423,7 @@ def initialize_database(force_reset=False):
                 due_date=datetime.strptime('2025-05-03', '%Y-%m-%d').date(),
                 amount=1200.00,
                 status='overdue',
-                deployment_id=deployments[3].id,
+                deployment_id=deployments[3]['id'],
                 notes='Invoice for residential complex water supply'
             ),
             Invoice(
@@ -1478,7 +1433,7 @@ def initialize_database(force_reset=False):
                 due_date=datetime.strptime('2025-04-20', '%Y-%m-%d').date(),
                 amount=1800.00,
                 status='cancelled',
-                deployment_id=deployments[5].id,
+                deployment_id=deployments[5]['id'],
                 notes='Invoice cancelled due to service agreement revision'
             ),
             Invoice(
@@ -1488,14 +1443,14 @@ def initialize_database(force_reset=False):
                 due_date=datetime.strptime('2025-05-08', '%Y-%m-%d').date(),
                 amount=2500.00,
                 status='draft',
-                deployment_id=deployments[4].id,
+                deployment_id=deployments[4]['id'],
                 notes='Draft invoice for emergency standby services'
             )
         ]
         for invoice in invoices:
-            db.session.add(invoice)
+            json_handler.create('invoices', invoice.to_dict())
         
-        db.session.commit()
+        print('Invoices created successfully.')
         
         print('Database initialized with sample data.')
     else:

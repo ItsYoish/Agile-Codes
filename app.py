@@ -369,7 +369,9 @@ def edit_invoice(invoice_id):
 @admin_required
 def manage_schemes():
     """Mutual Aid Scheme management interface"""
-    schemes = MutualAidScheme.query.order_by(MutualAidScheme.start_date.desc()).all()
+    schemes = json_handler.get_all('mutual_aid_schemes')
+    # Sort schemes by start_date in descending order
+    schemes.sort(key=lambda x: x.get('start_date', ''), reverse=True)
     return render_template('manage_schemes.html', schemes=schemes)
 
 @app.route('/finance/schemes/create', methods=['GET', 'POST'])
@@ -377,11 +379,18 @@ def manage_schemes():
 def create_scheme():
     """Create new mutual aid scheme"""
     if request.method == 'POST':
-        # Create new scheme from form data
+        # Create new scheme from form data using JSON model
+        from models.mutual_aid_models import MutualAidScheme
+        
+        # Parse dates from form
+        start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
+        end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date() if request.form.get('end_date') else None
+        
+        # Create scheme object
         new_scheme = MutualAidScheme(
             name=request.form['name'],
-            start_date=datetime.strptime(request.form['start_date'], '%Y-%m-%d').date(),
-            end_date=datetime.strptime(request.form['end_date'], '%Y-%m-%d').date() if request.form.get('end_date') else None,
+            start_date=start_date,
+            end_date=end_date,
             contribution_amount=float(request.form['contribution_amount']),
             balance=float(request.form.get('initial_balance', 0)),
             status=request.form.get('status', 'active'),
@@ -389,38 +398,41 @@ def create_scheme():
         )
         
         try:
-            db.session.add(new_scheme)
-            db.session.commit()
+            # Save to JSON storage
+            json_handler.create('mutual_aid_schemes', new_scheme.to_dict())
             flash('Mutual Aid Scheme created successfully!', 'success')
             return redirect(url_for('manage_schemes'))
         except Exception as e:
-            db.session.rollback()
             flash(f'Error creating scheme: {str(e)}', 'danger')
     
     # GET request - show form
     return render_template('create_scheme.html')
 
-@app.route('/finance/schemes/<int:scheme_id>/edit', methods=['GET', 'POST'])
+@app.route('/finance/schemes/<scheme_id>/edit', methods=['GET', 'POST'])
 @admin_required
 def edit_scheme(scheme_id):
     """Edit existing mutual aid scheme"""
-    scheme = MutualAidScheme.query.get_or_404(scheme_id)
+    scheme = json_handler.get_by_id('mutual_aid_schemes', scheme_id)
+    if not scheme:
+        flash('Scheme not found', 'danger')
+        return redirect(url_for('manage_schemes'))
     
     if request.method == 'POST':
         # Update scheme from form data
-        scheme.name = request.form['name']
-        scheme.start_date = datetime.strptime(request.form['start_date'], '%Y-%m-%d').date()
-        scheme.end_date = datetime.strptime(request.form['end_date'], '%Y-%m-%d').date() if request.form.get('end_date') else None
-        scheme.contribution_amount = float(request.form['contribution_amount'])
-        scheme.status = request.form['status']
-        scheme.notes = request.form.get('notes', '')
+        updates = {
+            'name': request.form['name'],
+            'start_date': datetime.strptime(request.form['start_date'], '%Y-%m-%d').isoformat(),
+            'end_date': datetime.strptime(request.form['end_date'], '%Y-%m-%d').isoformat() if request.form.get('end_date') else None,
+            'contribution_amount': float(request.form['contribution_amount']),
+            'status': request.form['status'],
+            'notes': request.form.get('notes', '')
+        }
         
         try:
-            db.session.commit()
+            json_handler.update('mutual_aid_schemes', scheme_id, updates)
             flash('Mutual Aid Scheme updated successfully!', 'success')
             return redirect(url_for('manage_schemes'))
         except Exception as e:
-            db.session.rollback()
             flash(f'Error updating scheme: {str(e)}', 'danger')
     
     # GET request - show form with scheme data
@@ -1237,7 +1249,7 @@ def initialize_database(force_reset=False):
                 'title': 'Maintenance Reminder',
                 'message': 'Scheduled maintenance for BWS002 due next week',
                 'priority': 'normal',
-                'status': 'active',
+                'status': 'active', 
                 'target_users': 'maintenance'
             },
             {
@@ -1498,36 +1510,41 @@ def get_invoices():
 @app.route('/api/mutual-aid/transactions', methods=['GET'])
 def get_mutual_aid_transactions():
     """API endpoint to get all mutual aid contributions"""
-    contributions = MutualAidContribution.query.all()
+    contributions = json_handler.get_all('mutual_aid_contributions')
     result = []
     for contribution in contributions:
+        # Get the scheme if it exists
+        scheme = None
+        if 'scheme_id' in contribution and contribution['scheme_id']:
+            scheme = json_handler.get_by_id('mutual_aid_schemes', contribution['scheme_id'])
+            
         result.append({
-            'id': contribution.id,
-            'partner': contribution.contributor_name,
-            'scheme': contribution.scheme.name if contribution.scheme else None,
+            'id': contribution['id'],
+            'partner': contribution['contributor_name'],
+            'scheme': scheme['name'] if scheme else None,
             'type': 'contribution',
-            'amount': float(contribution.amount),
-            'date': contribution.contribution_date.strftime('%Y-%m-%d'),
-            'receiptNumber': contribution.receipt_number,
-            'notes': contribution.notes
+            'amount': float(contribution['amount']),
+            'date': contribution['contribution_date'].split('T')[0] if 'contribution_date' in contribution else None,
+            'receiptNumber': contribution['receipt_number'],
+            'notes': contribution['notes']
         })
     return jsonify(result)
 
 @app.route('/api/mutual-aid/schemes', methods=['GET'])
 def get_mutual_aid_schemes():
     """API endpoint to get all mutual aid schemes"""
-    schemes = MutualAidScheme.query.all()
+    schemes = json_handler.get_all('mutual_aid_schemes')
     result = []
     for scheme in schemes:
         result.append({
-            'id': scheme.id,
-            'name': scheme.name,
-            'startDate': scheme.start_date.strftime('%Y-%m-%d'),
-            'endDate': scheme.end_date.strftime('%Y-%m-%d') if scheme.end_date else None,
-            'contributionAmount': float(scheme.contribution_amount),
-            'balance': float(scheme.balance),
-            'status': scheme.status,
-            'notes': scheme.notes
+            'id': scheme['id'],
+            'name': scheme['name'],
+            'startDate': scheme['start_date'].split('T')[0] if 'start_date' in scheme and scheme['start_date'] else None,
+            'endDate': scheme['end_date'].split('T')[0] if 'end_date' in scheme and scheme['end_date'] else None,
+            'contributionAmount': float(scheme['contribution_amount']),
+            'balance': float(scheme['balance']),
+            'status': scheme['status'],
+            'notes': scheme['notes']
         })
     return jsonify(result)
 

@@ -22,55 +22,81 @@ class LocationManager {
 
     initializeEventListeners() {
         // Search functionality
-        document.getElementById('searchLocation').addEventListener('input', () => {
-            this.filterLocations();
-        });
+        const searchInput = document.getElementById('locationSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                this.filterLocations();
+            });
+        }
 
         // Filter handlers
-        document.getElementById('typeFilter').addEventListener('change', () => this.filterLocations());
-        document.getElementById('statusFilter').addEventListener('change', () => this.filterLocations());
+        const typeFilter = document.getElementById('typeFilter');
+        if (typeFilter) {
+            typeFilter.addEventListener('change', () => this.filterLocations());
+        }
+        
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => this.filterLocations());
+        }
 
         // View toggle
-        document.querySelectorAll('.toggle-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.toggleView(e.currentTarget.dataset.view);
+        const toggleButtons = document.querySelectorAll('.toggle-btn');
+        if (toggleButtons.length > 0) {
+            toggleButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    this.toggleView(e.currentTarget.dataset.view);
+                });
             });
-        });
+        }
 
         // Add location modal
         const addLocationBtn = document.getElementById('addLocationBtn');
         const addLocationModal = document.getElementById('addLocationModal');
         const closeModalBtns = document.querySelectorAll('.close-modal, .cancel-btn');
 
-        addLocationBtn.addEventListener('click', () => {
-            addLocationModal.style.display = 'block';
-        });
-
-        closeModalBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                addLocationModal.style.display = 'none';
+        if (addLocationBtn && addLocationModal) {
+            addLocationBtn.addEventListener('click', () => {
+                addLocationModal.style.display = 'block';
             });
-        });
+        }
+
+        if (closeModalBtns.length > 0) {
+            closeModalBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (addLocationModal) {
+                        addLocationModal.style.display = 'none';
+                    }
+                });
+            });
+        }
 
         // Add location form submission
-        document.getElementById('addLocationForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.addNewLocation();
-        });
+        const addLocationForm = document.getElementById('addLocationForm');
+        if (addLocationForm) {
+            addLocationForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.addNewLocation();
+            });
+        }
     }
 
     async loadLocations() {
         try {
-            // Ensure data is loaded first
-            if (!this.dataManager.dataLoaded) {
-                await this.dataManager.loadData();
+            // Fetch locations from API endpoint
+            const response = await fetch('/api/locations');
+            if (!response.ok) {
+                throw new Error('Failed to fetch locations');
             }
-            // Load locations from data manager
-            const locations = this.dataManager.getLocations();
+            const locations = await response.json();
+            console.log('Loaded locations from API:', locations);
+            
+            // Display locations in the list and on the map
             this.displayLocations(locations);
             this.addMarkersToMap(locations);
         } catch (error) {
-            this.showNotification('Error loading locations', 'error');
+            console.error('Error loading locations:', error);
+            this.showNotification('Error loading locations: ' + error.message, 'error');
         }
     }
 
@@ -85,20 +111,22 @@ class LocationManager {
     }
 
     createLocationCard(location) {
-        // Get deployments for this location
-        const deployments = this.dataManager.getDeployments().filter(d => d.locationId === location.id);
         const card = document.createElement('div');
         card.className = 'location-card';
+        
+        // Handle potentially missing or different field names from API
+        const type = location.type || 'unknown';
+        const name = location.name || 'Unnamed Location';
+        const address = location.address || 'No address provided';
+        const status = location.status || 'unknown';
+        
         card.innerHTML = `
-            <div class="location-type type-${location.type}">${location.type.charAt(0).toUpperCase() + location.type.slice(1)}</div>
-            <h3>${location.name}</h3>
-            <p>${location.address}</p>
+            <div class="location-type type-${type}">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+            <h3>${name}</h3>
+            <p>${address}</p>
             <div class="location-status">
-                <span class="status-indicator status-${location.priority}"></span>
-                <span>${location.priority.charAt(0).toUpperCase() + location.priority.slice(1)} Priority</span>
-            </div>
-            <div class="bowser-count">
-                <i class="fas fa-truck"></i> ${deployments.length} Bowsers Deployed
+                <span class="status-indicator status-${status}"></span>
+                <span>${status.charAt(0).toUpperCase() + status.slice(1)}</span>
             </div>
         `;
 
@@ -119,7 +147,23 @@ class LocationManager {
         this.markers = {};
 
         locations.forEach(location => {
-            const marker = L.marker(location.coordinates)
+            // Handle different coordinate formats from API
+            let coordinates;
+            if (Array.isArray(location.coordinates)) {
+                // If coordinates is an array [lat, lng]
+                coordinates = location.coordinates;
+            } else if (location.coordinates && typeof location.coordinates === 'object') {
+                // If coordinates is an object {lat, lng}
+                coordinates = [location.coordinates.lat, location.coordinates.lng];
+            } else if (location.latitude !== undefined && location.longitude !== undefined) {
+                // If separate latitude/longitude fields
+                coordinates = [location.latitude, location.longitude];
+            } else {
+                console.error('Invalid coordinates format for location:', location);
+                return; // Skip this location
+            }
+            
+            const marker = L.marker(coordinates)
                 .bindPopup(this.createMarkerPopup(location))
                 .addTo(this.map);
             
@@ -134,18 +178,15 @@ class LocationManager {
     }
 
     createMarkerPopup(location) {
-        const deployments = this.dataManager.getDeploymentsByLocation(location.id); // Update to use this.dataManager
-        const activeDeployments = deployments.filter(d => d.status === 'active');
-        const alerts = this.dataManager.getAlertsByLocation(location.id); // Update to use this.dataManager
+        // We're not using dataManager for deployments and alerts anymore
+        // since we're fetching directly from the API
         
         return `
             <div class="marker-popup">
-                <h3>${location.name}</h3>
-                <p>${location.address}</p>
-                <p><strong>Type:</strong> ${location.type}</p>
-                <p><strong>Priority:</strong> ${location.priority}</p>
-                <p><strong>Active Bowsers:</strong> ${activeDeployments.length}</p>
-                <p><strong>Active Alerts:</strong> ${alerts.length}</p>
+                <h3>${location.name || 'Unnamed Location'}</h3>
+                <p>${location.address || 'No address provided'}</p>
+                <p><strong>Type:</strong> ${location.type || 'N/A'}</p>
+                <p><strong>Status:</strong> ${location.status || 'N/A'}</p>
                 <button onclick="locationManager.viewLocationDetails('${location.id}')" class="primary-btn">
                     View Details
                 </button>
@@ -153,23 +194,41 @@ class LocationManager {
         `;
     }
 
-    filterLocations() {
+    async filterLocations() {
         const searchTerm = document.getElementById('locationSearch').value.toLowerCase();
         const areaFilter = document.getElementById('areaFilter').value;
         const statusFilter = document.getElementById('statusFilter').value;
 
-        const locations = this.dataManager.getLocations();
-        const filteredLocations = locations.filter(location => {
-            const matchesSearch = location.name.toLowerCase().includes(searchTerm) ||
-                                location.address.toLowerCase().includes(searchTerm);
-            const matchesArea = !areaFilter || location.area === areaFilter;
-            const matchesStatus = !statusFilter || location.status === statusFilter;
+        try {
+            // Fetch all locations from API
+            const response = await fetch('/api/locations');
+            if (!response.ok) {
+                throw new Error('Failed to fetch locations for filtering');
+            }
+            
+            const locations = await response.json();
+            
+            // Filter locations based on search criteria
+            const filteredLocations = locations.filter(location => {
+                // Handle potentially missing fields
+                const name = (location.name || '').toLowerCase();
+                const address = (location.address || '').toLowerCase();
+                const area = location.area || '';
+                const status = location.status || '';
+                
+                const matchesSearch = name.includes(searchTerm) || address.includes(searchTerm);
+                const matchesArea = !areaFilter || area === areaFilter;
+                const matchesStatus = !statusFilter || status === statusFilter;
 
-            return matchesSearch && matchesArea && matchesStatus;
-        });
+                return matchesSearch && matchesArea && matchesStatus;
+            });
 
-        this.displayLocations(filteredLocations);
-        this.updateMapMarkers(filteredLocations);
+            this.displayLocations(filteredLocations);
+            this.updateMapMarkers(filteredLocations);
+        } catch (error) {
+            console.error('Error filtering locations:', error);
+            this.showNotification('Error filtering locations: ' + error.message, 'error');
+        }
     }
 
     updateMapMarkers(locations) {
@@ -222,14 +281,25 @@ class LocationManager {
         this.showNotification('Location added successfully', 'success');
     }
 
-    viewLocationDetails(locationId) {
-        const location = this.dataManager.getLocationById(locationId);
-        const deployments = this.dataManager.getDeployments().filter(d => d.locationId === locationId);
-        // Get alerts related to this location if available
-        const alerts = this.dataManager.getAlerts ? this.dataManager.getAlerts().filter(a => a.locationId === locationId) : [];
-        
-        // You can implement a modal or details panel here
-        console.log('Location Details:', { location, deployments, alerts });
+    async viewLocationDetails(locationId) {
+        try {
+            // Fetch location details from API
+            const response = await fetch(`/api/locations/${locationId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch location details');
+            }
+            
+            const location = await response.json();
+            
+            // You can implement a modal or details panel here
+            console.log('Location Details:', { location });
+            
+            // Show a notification with basic location details for now
+            this.showNotification(`Location: ${location.name || 'Unnamed'}<br>Address: ${location.address || 'No address'}<br>Type: ${location.type || 'Unknown'}`, 'info');
+        } catch (error) {
+            console.error('Error fetching location details:', error);
+            this.showNotification('Error fetching location details: ' + error.message, 'error');
+        }
     }
 
     showNotification(message, type = 'info') {

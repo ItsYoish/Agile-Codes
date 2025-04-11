@@ -12,7 +12,7 @@ const CONFIG = {
     
     // API endpoints (for future backend integration)
     api: {
-        base: 'http://localhost:3000/api',
+        base: 'http://localhost:5000/api',
         endpoints: {
             bowsers: '/bowsers',
             locations: '/locations',
@@ -21,7 +21,8 @@ const CONFIG = {
             alerts: '/alerts',
             schedule: '/schedule',
             refills: '/refills',
-            users: '/users'
+            users: '/users',
+            reports: '/reports'
         }
     },
     
@@ -49,6 +50,12 @@ const CONFIG = {
         low: 'low'
     },
     
+    // Mock data configuration
+    mockData: {
+        enabled: true,
+        delay: 0
+    },
+    
     // Water bowser capacities (in liters)
     bowserCapacities: [
         1000,
@@ -58,11 +65,6 @@ const CONFIG = {
     ],
     
     // Default location search radius (in kilometers)
-    defaultSearchRadius: 10,
-    
-    // Mock data settings
-    mockData: {
-        enabled: true, // Set to false when using real API
-        delay: 500 // Simulated delay in milliseconds
-    }
+    defaultSearchRadius: 10
+
 };

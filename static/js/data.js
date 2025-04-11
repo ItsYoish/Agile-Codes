@@ -11,8 +11,7 @@ class DataManager {
         this.schedule = [];
         this.refills = [];
         
-        // Automatically load mock data
-        this.loadMockData();
+
     }
     
     /**
@@ -557,6 +556,23 @@ class DataManager {
      */
     getLocations() {
         return this.locations;
+    }
+    
+    /**
+     * Get all bowsers
+     * @returns {Array} All bowsers
+     */
+    getBowsers() {
+        return this.bowsers;
+    }
+    
+    /**
+     * Get bowsers by status
+     * @param {string} status - Status to filter by
+     * @returns {Array} Filtered bowsers
+     */
+    getBowsersByStatus(status) {
+        return this.bowsers.filter(bowser => bowser.status === status);
     }
 }
 

@@ -44,8 +44,23 @@ class ReportsManager {
         });
     }
 
-    loadReportData() {
+    async loadReportData() {
         try {
+            // Fetch data from API
+            const [bowsers, deployments, maintenance, reports] = await Promise.all([
+                fetch(`${CONFIG.api.base}${CONFIG.api.endpoints.bowsers}`).then(res => res.json()),
+                fetch(`${CONFIG.api.base}${CONFIG.api.endpoints.deployments}`).then(res => res.json()),
+                fetch(`${CONFIG.api.base}${CONFIG.api.endpoints.maintenance}`).then(res => res.json()),
+                fetch(`${CONFIG.api.base}${CONFIG.api.endpoints.reports}`).then(res => res.json())
+            ]);
+            
+            // Store data in dataManager
+            dataManager.bowsers = bowsers;
+            dataManager.deployments = deployments;
+            dataManager.maintenanceRecords = maintenance;
+            dataManager.reports = reports;
+            
+            // Update UI components
             this.updateMetrics();
             this.createUtilizationChart();
             this.createDistributionChart();
@@ -53,39 +68,55 @@ class ReportsManager {
             this.updateLocationPerformance();
         } catch (error) {
             this.showNotification('Error loading report data', 'error');
+            console.error(error);
         }
     }
 
-    updateMetrics() {
-        // Calculate metrics based on data
-        const activeBowsers = dataManager.getBowsersByStatus('deployed').length;
-        const activeDeployments = dataManager.getActiveDeployments();
-        const locationsServed = new Set(activeDeployments.map(d => d.locationId)).size;
-        
-        const allMaintenance = dataManager.getActiveMaintenance();
-        const completedMaintenance = allMaintenance.filter(r => r.status === 'completed');
-        const maintenanceRate = allMaintenance.length ? 
-            Math.round((completedMaintenance.length / allMaintenance.length) * 100) : 0;
-
-        // Calculate total water supplied based on bowser capacities and supply levels
-        const waterSupplied = activeDeployments.reduce((total, deployment) => {
-            const bowser = dataManager.getBowserById(deployment.bowserId);
-            if (bowser) {
-                const supplyLevel = deployment.supplyLevel || 0;
-                const waterDelivered = bowser.capacity * ((100 - supplyLevel) / 100);
-                return total + waterDelivered;
-            }
-            return total;
-        }, 0);
-
-        // Calculate change percentages based on previous period
-        // Note: In a real system, we would fetch historical data
-        const changes = {
-            bowser: activeBowsers > 0 ? '+5%' : '0%',
-            location: locationsServed > 0 ? '+12%' : '0%',
-            maintenance: maintenanceRate > 0 ? '-2%' : '0%',
-            supply: waterSupplied > 0 ? '+8%' : '0%'
+    async updateMetrics() {
+        let activeBowsers = 0;
+        let locationsServed = 0;
+        let maintenanceRate = 0;
+        let waterSupplied = 0;
+        let changes = {
+            bowser: '0%',
+            location: '0%',
+            maintenance: '0%',
+            supply: '0%'
         };
+        
+        try {
+            // Get current data
+            activeBowsers = dataManager.bowsers.filter(b => b.status === 'active').length;
+            const activeDeployments = dataManager.deployments.filter(d => d.status === 'active');
+            locationsServed = new Set(activeDeployments.map(d => d.locationId)).size;
+            
+            const allMaintenance = dataManager.maintenanceRecords;
+            const completedMaintenance = allMaintenance.filter(r => r.status === 'completed');
+            maintenanceRate = allMaintenance.length ? 
+                Math.round((completedMaintenance.length / allMaintenance.length) * 100) : 0;
+
+            // Calculate total water supplied
+            waterSupplied = activeDeployments.reduce((total, deployment) => {
+                const bowser = dataManager.bowsers.find(b => b.id === deployment.bowserId);
+                if (bowser) {
+                    const supplyLevel = deployment.supplyLevel || 0;
+                    const waterDelivered = bowser.capacity * ((100 - supplyLevel) / 100);
+                    return total + waterDelivered;
+                }
+                return total;
+            }, 0);
+
+            // Calculate changes (simplified for demo)
+            changes = {
+                bowser: activeBowsers > 0 ? '+5%' : '0%',
+                location: locationsServed > 0 ? '+12%' : '0%',
+                maintenance: maintenanceRate > 0 ? '-2%' : '0%',
+                supply: waterSupplied > 0 ? '+8%' : '0%'
+            };
+        } catch (error) {
+            this.showNotification('Error updating metrics', 'error');
+            console.error(error);
+        }
 
         // Update DOM with metrics
         document.getElementById('activeBowsers').textContent = activeBowsers;
@@ -106,6 +137,8 @@ class ReportsManager {
         document.getElementById('supplyChange').textContent = changes.supply;
         document.getElementById('supplyChange').className = 'metric-change ' + (changes.supply.startsWith('+') ? 'positive' : 'negative');
     }
+
+    createUtilizationChart() {
 
     createUtilizationChart() {
         const ctx = document.getElementById('utilizationChart').getContext('2d');
@@ -147,7 +180,7 @@ class ReportsManager {
                     }
                 }
             }
-        });
+        });;
     }
 
     createDistributionChart() {
@@ -188,7 +221,7 @@ class ReportsManager {
                     }
                 }
             }
-        });
+        });;
     }
 
     createMaintenanceCharts() {
@@ -233,7 +266,7 @@ class ReportsManager {
                     }
                 }
             }
-        });
+        });;
 
         // Response Time Trends chart
         const timeCtx = document.getElementById('responseTimeChart').getContext('2d');
@@ -273,7 +306,7 @@ class ReportsManager {
                     }
                 }
             }
-        });
+        });;
     }
 
     calculateResponseTimeTrends() {
@@ -347,7 +380,7 @@ class ReportsManager {
             <option value="emergency">Emergency</option>
             <option value="residential">Residential</option>
             <option value="commercial">Commercial</option>
-        `;
+        `;;
     }
 
     calculateSupplyLevel(deployments) {
@@ -357,18 +390,18 @@ class ReportsManager {
             return sum + (deployment.supplyLevel || 0);
         }, 0);
         
-        return Math.round(totalLevel / deployments.length);
+        return Math.round(totalLevel / deployments.length);;
     }
 
     calculateRefillRate(deployments) {
         // This would normally calculate based on historical refill data
         // For now, return a mock value between 1-3
-        return ((deployments.length % 3) + 1).toFixed(1);
+        return ((deployments.length % 3) + 1).toFixed(1);;
     }
 
     exportReport(format) {
         // This would normally handle the export functionality
-        this.showNotification(`Report exported as ${format.toUpperCase()}`, 'success');
+        this.showNotification(`Report exported as ${format.toUpperCase()}`, 'success');;
     }
 
     showNotification(message, type = 'info') {

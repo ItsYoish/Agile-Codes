@@ -5,6 +5,7 @@ class MaintenanceManager {
     constructor() {
         this.currentView = 'list';
         this.currentWeek = new Date();
+        this.dbHandler = new DatabaseHandler();
         this.initializeEventListeners();
         this.loadMaintenanceData();
     }
@@ -53,11 +54,17 @@ class MaintenanceManager {
 
     async loadMaintenanceData() {
         try {
-            // Load maintenance records from data manager
-            const records = dataManager.getActiveMaintenance();
+            // Load data from the database if not already loaded
+            if (!this.dbHandler.dataLoaded) {
+                await this.dbHandler.loadData();
+            }
+            
+            // Get maintenance records from the database
+            const records = this.dbHandler.getMaintenanceRecords();
             this.updateCalendar();
             this.displayMaintenanceRecords(records);
         } catch (error) {
+            console.error('Error loading maintenance records:', error);
             this.showNotification('Error loading maintenance records', 'error');
         }
     }
@@ -107,8 +114,8 @@ class MaintenanceManager {
                 currentDate.getDate()}`;
 
             // Find maintenance events for this day
-            const events = dataManager.getActiveMaintenance().filter(record => {
-                const scheduledDate = new Date(record.scheduledDate);
+            const events = this.dbHandler.getMaintenanceRecords().filter(record => {
+                const scheduledDate = new Date(record.scheduled_date);
                 return scheduledDate.toDateString() === currentDate.toDateString();
             });
 
@@ -139,25 +146,29 @@ class MaintenanceManager {
     }
 
     createMaintenanceCard(record) {
-        const bowser = dataManager.getBowserById(record.bowserId);
+        const bowser = this.dbHandler.getBowserById(record.bowser_id);
         const card = document.createElement('div');
         card.className = 'maintenance-card';
+        
+        // Convert status format (e.g., in_progress to in-progress)
+        const status = record.status.replace('_', '-');
+        
         card.innerHTML = `
             <div class="maintenance-info">
                 <div>
                     <h3>Bowser ${bowser?.number || 'Unknown'}</h3>
                     <p>${record.description}</p>
-                    <div class="maintenance-status status-${record.status}">
-                        ${record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                    <div class="maintenance-status status-${status}">
+                        ${status.charAt(0).toUpperCase() + status.slice(1)}
                     </div>
-                    <div class="priority-indicator priority-${record.priority}">
+                    <div class="priority-indicator priority-${record.priority || 'medium'}">
                         <i class="fas fa-flag"></i>
-                        ${record.priority.charAt(0).toUpperCase() + record.priority.slice(1)} Priority
+                        ${(record.priority || 'Medium').charAt(0).toUpperCase() + (record.priority || 'medium').slice(1)} Priority
                     </div>
                 </div>
                 <div>
-                    <p><i class="fas fa-calendar"></i> ${new Date(record.scheduledDate).toLocaleDateString()}</p>
-                    <p><i class="fas fa-user-cog"></i> ${record.assignedTo}</p>
+                    <p><i class="fas fa-calendar"></i> ${new Date(record.scheduled_date).toLocaleDateString()}</p>
+                    <p><i class="fas fa-user-cog"></i> ${record.assigned_to}</p>
                 </div>
             </div>
         `;
@@ -200,13 +211,17 @@ class MaintenanceManager {
         });
     }
 
-    viewMaintenanceDetails(id) {
-        const record = dataManager.getMaintenanceByBowser(id)[0];
+    async viewMaintenanceDetails(id) {
+        // Get the maintenance record by ID
+        const record = await this.dbHandler.getMaintenanceRecordById(id);
         if (!record) return;
 
-        const bowser = dataManager.getBowserById(record.bowserId);
+        const bowser = this.dbHandler.getBowserById(record.bowser_id);
         const modal = document.getElementById('maintenanceDetailsModal');
         const content = document.getElementById('maintenanceDetailsContent');
+        
+        // Convert status format (e.g., in_progress to in-progress)
+        const status = record.status.replace('_', '-');
 
         content.innerHTML = `
             <div class="details-grid">
@@ -220,19 +235,19 @@ class MaintenanceManager {
                 </div>
                 <div class="detail-item">
                     <label>Status</label>
-                    <span class="status-${record.status}">${record.status}</span>
+                    <span class="status-${status}">${status}</span>
                 </div>
                 <div class="detail-item">
                     <label>Priority</label>
-                    <span class="priority-${record.priority}">${record.priority}</span>
+                    <span class="priority-${record.priority || 'medium'}">${(record.priority || 'Medium')}</span>
                 </div>
                 <div class="detail-item">
                     <label>Scheduled Date</label>
-                    <span>${new Date(record.scheduledDate).toLocaleString()}</span>
+                    <span>${new Date(record.scheduled_date).toLocaleString()}</span>
                 </div>
                 <div class="detail-item">
                     <label>Assigned To</label>
-                    <span>${record.assignedTo}</span>
+                    <span>${record.assigned_to}</span>
                 </div>
                 <div class="detail-item full-width">
                     <label>Description</label>
@@ -244,33 +259,43 @@ class MaintenanceManager {
         modal.style.display = 'block';
     }
 
-    addNewMaintenance() {
+    async addNewMaintenance() {
         const form = document.getElementById('addMaintenanceForm');
         const formData = {
-            bowserId: form.bowserId.value,
+            bowser_id: form.bowserId.value,
             type: form.maintenanceType.value,
             description: form.description.value,
-            scheduledDate: form.scheduledDate.value,
+            scheduled_date: form.scheduledDate.value,
             priority: form.priority.value,
-            assignedTo: form.assignedTo.value,
-            status: 'scheduled',
-            id: Date.now().toString()
+            assigned_to: form.assignedTo.value,
+            status: 'scheduled'
         };
 
-        // Add to mock data
-        dataManager.data.maintenance.push(formData);
+        try {
+            // Add to database
+            await fetch(`${this.dbHandler.API_BASE_URL}/maintenance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
 
-        // Update UI
-        this.loadMaintenanceData();
-        document.getElementById('addMaintenanceModal').style.display = 'none';
-        this.showNotification('Maintenance scheduled successfully', 'success');
+            // Update UI
+            await this.loadMaintenanceData();
+            document.getElementById('addMaintenanceModal').style.display = 'none';
+            this.showNotification('Maintenance scheduled successfully', 'success');
+        } catch (error) {
+            console.error('Error adding maintenance record:', error);
+            this.showNotification('Error scheduling maintenance', 'error');
+        }
     }
 
     populateBowserSelect() {
         const select = document.getElementById('bowserId');
         select.innerHTML = '';
         
-        dataManager.getBowsers().forEach(bowser => {
+        this.dbHandler.getBowsers().forEach(bowser => {
             const option = document.createElement('option');
             option.value = bowser.id;
             option.textContent = `Bowser ${bowser.number}`;
@@ -284,13 +309,17 @@ class MaintenanceManager {
         const statusFilter = document.getElementById('statusFilter').value;
         const priorityFilter = document.getElementById('priorityFilter').value;
 
-        let records = dataManager.getActiveMaintenance();
+        let records = this.dbHandler.getMaintenanceRecords();
 
         // Apply filters
         records = records.filter(record => {
             const matchesSearch = record.description.toLowerCase().includes(searchTerm);
             const matchesType = typeFilter === 'all' || record.type === typeFilter;
-            const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
+            
+            // Convert status format for comparison (e.g., in_progress to in-progress)
+            const recordStatus = record.status.replace('_', '-');
+            const matchesStatus = statusFilter === 'all' || recordStatus === statusFilter;
+            
             const matchesPriority = priorityFilter === 'all' || record.priority === priorityFilter;
 
             return matchesSearch && matchesType && matchesStatus && matchesPriority;
@@ -337,6 +366,11 @@ class MaintenanceManager {
 
 // Initialize maintenance manager when the page loads
 let maintenanceManager;
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Set CONFIG to use real data instead of mock data
+    if (typeof CONFIG !== 'undefined') {
+        CONFIG.mockData.enabled = false;
+    }
+    
     maintenanceManager = new MaintenanceManager();
 });

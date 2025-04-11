@@ -275,6 +275,10 @@ def delete_partner(id):
         return '', 204
     return jsonify({'error': 'Partner not found'}), 404
 
+# Mutual Aid Contribution/Transaction routes
+# Note: The '/api/mutual-aid/transactions' route is implemented in app.py
+# to use the SQLAlchemy model instead of JSON data
+
 # Alert routes
 @api.route('/api/alerts', methods=['GET'])
 def get_alerts():

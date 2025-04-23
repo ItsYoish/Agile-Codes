@@ -9,7 +9,7 @@
       "last_maintenance": "2025-04-07T00:00:00",
       "notes": "Regular maintenance completed",
       "id": 1,
-      "created_at": "2025-04-11T01:58:19.545576"
+      "created_at": "2025-04-15T09:40:27.600357"
     },
     {
       "number": "BWS002",
@@ -20,7 +20,7 @@
       "last_maintenance": "2025-03-21T00:00:00",
       "notes": "Scheduled maintenance in 2 weeks",
       "id": 2,
-      "created_at": "2025-04-11T01:58:19.546937"
+      "created_at": "2025-04-15T09:40:27.601388"
     },
     {
       "number": "BWS003",
@@ -31,7 +31,7 @@
       "last_maintenance": "2025-03-10T00:00:00",
       "notes": "Currently undergoing repairs",
       "id": 3,
-      "created_at": "2025-04-11T01:58:19.548085"
+      "created_at": "2025-04-15T09:40:27.601388"
     },
     {
       "number": "BWS004",
@@ -42,7 +42,7 @@
       "last_maintenance": "2025-04-05T00:00:00",
       "notes": "New bowser, recently commissioned",
       "id": 4,
-      "created_at": "2025-04-11T01:58:19.548085"
+      "created_at": "2025-04-15T09:40:27.602390"
     },
     {
       "number": "BWS005",
@@ -53,7 +53,7 @@
       "last_maintenance": "2025-04-02T00:00:00",
       "notes": "Ready for emergency deployment",
       "id": 5,
-      "created_at": "2025-04-11T01:58:19.549089"
+      "created_at": "2025-04-15T09:40:27.603395"
     },
     {
       "number": "BWS006",
@@ -64,7 +64,7 @@
       "last_maintenance": "2025-03-15T00:00:00",
       "notes": "Regular service scheduled",
       "id": 6,
-      "created_at": "2025-04-11T01:58:19.549089"
+      "created_at": "2025-04-15T09:40:27.604600"
     },
     {
       "number": "BWS007",
@@ -75,7 +75,7 @@
       "last_maintenance": "2025-02-28T00:00:00",
       "notes": "Major repair needed - tank leak",
       "id": 7,
-      "created_at": "2025-04-11T01:58:19.550090"
+      "created_at": "2025-04-15T09:40:27.604600"
     }
   ],
   "locations": [
@@ -86,7 +86,7 @@
       "longitude": -0.09,
       "type": "headquarters",
       "id": 1,
-      "created_at": "2025-04-11T01:58:19.551089"
+      "created_at": "2025-04-15T09:40:27.605661"
     },
     {
       "name": "City Hospital",
@@ -95,7 +95,7 @@
       "longitude": -0.11,
       "type": "healthcare",
       "id": 2,
-      "created_at": "2025-04-11T01:58:19.551089"
+      "created_at": "2025-04-15T09:40:27.605661"
     },
     {
       "name": "Community Center",
@@ -104,7 +104,7 @@
       "longitude": -0.12,
       "type": "community",
       "id": 3,
-      "created_at": "2025-04-11T01:58:19.552090"
+      "created_at": "2025-04-15T09:40:27.606662"
     },
     {
       "name": "South Water Treatment Plant",
@@ -113,7 +113,7 @@
       "longitude": -0.13,
       "type": "infrastructure",
       "id": 4,
-      "created_at": "2025-04-11T01:58:19.553082"
+      "created_at": "2025-04-15T09:40:27.607659"
     },
     {
       "name": "East Region School",
@@ -122,7 +122,7 @@
       "longitude": -0.05,
       "type": "education",
       "id": 5,
-      "created_at": "2025-04-11T01:58:19.553082"
+      "created_at": "2025-04-15T09:40:27.609684"
     },
     {
       "name": "West Region Residential Complex",
@@ -131,7 +131,7 @@
       "longitude": -0.15,
       "type": "residential",
       "id": 6,
-      "created_at": "2025-04-11T01:58:19.554781"
+      "created_at": "2025-04-15T09:40:27.609684"
     },
     {
       "name": "Emergency Response Center",
@@ -140,7 +140,7 @@
       "longitude": -0.1,
       "type": "emergency",
       "id": 7,
-      "created_at": "2025-04-11T01:58:19.556079"
+      "created_at": "2025-04-15T09:40:27.610683"
     }
   ],
   "maintenance": [
@@ -152,7 +152,7 @@
       "status": "scheduled",
       "assigned_to": "Maintenance Team A",
       "id": 1,
-      "created_at": "2025-04-11T01:58:19.557082"
+      "created_at": "2025-04-15T09:40:27.611797"
     },
     {
       "bowser_id": 2,
@@ -162,7 +162,7 @@
       "status": "pending",
       "assigned_to": "Maintenance Team B",
       "id": 2,
-      "created_at": "2025-04-11T01:58:19.557082"
+      "created_at": "2025-04-15T09:40:27.612974"
     },
     {
       "bowser_id": 3,
@@ -172,7 +172,7 @@
       "status": "in_progress",
       "assigned_to": "Emergency Response Team",
       "id": 3,
-      "created_at": "2025-04-11T01:58:19.558548"
+      "created_at": "2025-04-15T09:40:27.614008"
     },
     {
       "bowser_id": 4,
@@ -182,7 +182,7 @@
       "status": "completed",
       "assigned_to": "Safety Inspector",
       "id": 4,
-      "created_at": "2025-04-11T01:58:19.559599"
+      "created_at": "2025-04-15T09:40:27.614008"
     },
     {
       "bowser_id": 5,
@@ -192,7 +192,7 @@
       "status": "scheduled",
       "assigned_to": "Maintenance Team C",
       "id": 5,
-      "created_at": "2025-04-11T01:58:19.561684"
+      "created_at": "2025-04-15T09:40:27.616007"
     },
     {
       "bowser_id": 7,
@@ -202,7 +202,7 @@
       "status": "scheduled",
       "assigned_to": "Specialist Repair Team",
       "id": 6,
-      "created_at": "2025-04-11T01:58:19.562191"
+      "created_at": "2025-04-15T09:40:27.617004"
     }
   ],
   "deployments": [
@@ -215,7 +215,7 @@
       "priority": "emergency",
       "notes": "Emergency water supply due to pipe burst",
       "id": 1,
-      "created_at": "2025-04-11T01:58:19.563716"
+      "created_at": "2025-04-15T09:40:27.618005"
     },
     {
       "bowser_id": 2,
@@ -226,7 +226,7 @@
       "priority": "high",
       "notes": "Critical water supply needed for hospital wing",
       "id": 2,
-      "created_at": "2025-04-11T01:58:19.563716"
+      "created_at": "2025-04-15T09:40:27.619013"
     },
     {
       "bowser_id": 4,
@@ -237,7 +237,7 @@
       "priority": "medium",
       "notes": "Community center water supply",
       "id": 3,
-      "created_at": "2025-04-11T01:58:19.566001"
+      "created_at": "2025-04-15T09:40:27.621284"
     },
     {
       "bowser_id": 6,
@@ -248,7 +248,7 @@
       "priority": "low",
       "notes": "Scheduled water delivery for residential complex",
       "id": 4,
-      "created_at": "2025-04-11T01:58:19.567005"
+      "created_at": "2025-04-15T09:40:27.621284"
     },
     {
       "bowser_id": 5,
@@ -259,7 +259,7 @@
       "priority": "high",
       "notes": "Standby deployment for emergency response center",
       "id": 5,
-      "created_at": "2025-04-11T01:58:19.567005"
+      "created_at": "2025-04-15T09:40:27.622556"
     },
     {
       "bowser_id": 1,
@@ -270,12 +270,12 @@
       "priority": "medium",
       "notes": "Temporary water supply during maintenance",
       "id": 6,
-      "created_at": "2025-04-11T01:58:19.569426"
+      "created_at": "2025-04-15T09:40:27.624696"
     }
   ],
   "invoices": [
     {
-      "id": "23285597-5902-447f-b86e-a296f94c8f06",
+      "id": "80354838-b800-4e3c-ad3c-a79f8e399f8d",
       "invoice_number": "INV-2025-001",
       "client_name": "North Region Council",
       "issue_date": "2025-04-01",
@@ -284,10 +284,10 @@
       "status": "pending",
       "notes": "Invoice for emergency water supply services",
       "deployment_id": 1,
-      "created_at": "2025-04-11T01:58:19.594161"
+      "created_at": "2025-04-15T09:40:27.651671"
     },
     {
-      "id": "c4bd5576-0e75-474d-9334-6644ec550326",
+      "id": "356046c1-be40-4f10-b81a-12bb895a9ce4",
       "invoice_number": "INV-2025-002",
       "client_name": "City Hospital",
       "issue_date": "2025-03-15",
@@ -296,10 +296,10 @@
       "status": "paid",
       "notes": "Invoice for scheduled water delivery services",
       "deployment_id": 2,
-      "created_at": "2025-04-11T01:58:19.595160"
+      "created_at": "2025-04-15T09:40:27.653667"
     },
     {
-      "id": "3849ce63-112b-44bf-90a3-ae75332e4bbd",
+      "id": "efadff92-2155-4311-ac2c-184747979625",
       "invoice_number": "INV-2025-003",
       "client_name": "Community Center Association",
       "issue_date": "2025-04-05",
@@ -308,10 +308,10 @@
       "status": "pending",
       "notes": "Invoice for community water supply",
       "deployment_id": 3,
-      "created_at": "2025-04-11T01:58:19.596290"
+      "created_at": "2025-04-15T09:40:27.655670"
     },
     {
-      "id": "b587dd51-540e-4955-add7-85fda5f38435",
+      "id": "8569fea6-c68d-42f1-94d7-65bb14693efc",
       "invoice_number": "INV-2025-004",
       "client_name": "West Region Housing Authority",
       "issue_date": "2025-04-03",
@@ -320,10 +320,10 @@
       "status": "overdue",
       "notes": "Invoice for residential complex water supply",
       "deployment_id": 4,
-      "created_at": "2025-04-11T01:58:19.597690"
+      "created_at": "2025-04-15T09:40:27.657045"
     },
     {
-      "id": "df3746d4-3628-476f-bdea-e022abe9093a",
+      "id": "2cffd421-2125-4552-902a-81e5a625898b",
       "invoice_number": "INV-2025-005",
       "client_name": "South Water Treatment Plant",
       "issue_date": "2025-03-20",
@@ -332,10 +332,10 @@
       "status": "cancelled",
       "notes": "Invoice cancelled due to service agreement revision",
       "deployment_id": 6,
-      "created_at": "2025-04-11T01:58:19.599695"
+      "created_at": "2025-04-15T09:40:27.658056"
     },
     {
-      "id": "afb1263f-1ecc-456a-af93-f9eac73cd8da",
+      "id": "95354872-1bcd-4748-98ac-ea96f4883b37",
       "invoice_number": "INV-2025-006",
       "client_name": "Emergency Response Authority",
       "issue_date": "2025-04-08",
@@ -344,7 +344,7 @@
       "status": "draft",
       "notes": "Draft invoice for emergency standby services",
       "deployment_id": 5,
-      "created_at": "2025-04-11T01:58:19.600818"
+      "created_at": "2025-04-15T09:40:27.660060"
     }
   ],
   "mutual_aid_schemes": [
@@ -357,7 +357,7 @@
       "status": "active",
       "notes": "Mutual aid scheme for emergency water supply in North Region",
       "id": 1,
-      "created_at": "2025-04-11T01:58:19.578906"
+      "created_at": "2025-04-15T09:40:27.632748"
     },
     {
       "name": "Community Support Fund",
@@ -368,7 +368,7 @@
       "status": "active",
       "notes": "Ongoing community support scheme",
       "id": 2,
-      "created_at": "2025-04-11T01:58:19.579908"
+      "created_at": "2025-04-15T09:40:27.633747"
     },
     {
       "name": "South Region Drought Relief",
@@ -379,7 +379,7 @@
       "status": "active",
       "notes": "Temporary fund for drought relief efforts",
       "id": 3,
-      "created_at": "2025-04-11T01:58:19.581110"
+      "created_at": "2025-04-15T09:40:27.634749"
     },
     {
       "name": "East-West Collaborative Fund",
@@ -390,7 +390,7 @@
       "status": "active",
       "notes": "Joint fund between East and West regions",
       "id": 4,
-      "created_at": "2025-04-11T01:58:19.582142"
+      "created_at": "2025-04-15T09:40:27.636984"
     },
     {
       "name": "Winter Emergency Fund",
@@ -401,7 +401,7 @@
       "status": "completed",
       "notes": "Fund for winter freeze emergencies - now closed",
       "id": 5,
-      "created_at": "2025-04-11T01:58:19.583168"
+      "created_at": "2025-04-15T09:40:27.637982"
     }
   ],
   "mutual_aid_contributions": [
@@ -413,7 +413,7 @@
       "receipt_number": "CONT-001",
       "notes": "Monthly contribution",
       "id": 1,
-      "created_at": "2025-04-11T01:58:19.584679"
+      "created_at": "2025-04-15T09:40:27.639982"
     },
     {
       "scheme_id": 1,
@@ -423,7 +423,7 @@
       "receipt_number": "CONT-002",
       "notes": "Quarterly contribution",
       "id": 2,
-      "created_at": "2025-04-11T01:58:19.586129"
+      "created_at": "2025-04-15T09:40:27.640982"
     },
     {
       "scheme_id": 2,
@@ -433,7 +433,7 @@
       "receipt_number": "CONT-003",
       "notes": "Initial contribution",
       "id": 3,
-      "created_at": "2025-04-11T01:58:19.587127"
+      "created_at": "2025-04-15T09:40:27.643517"
     }
   ],
   "partners": [
@@ -447,7 +447,7 @@
       "status": "active",
       "notes": "Primary water utility partner for emergency support",
       "id": 1,
-      "created_at": "2025-04-11T01:58:19.588165"
+      "created_at": "2025-04-15T09:40:27.645516"
     },
     {
       "name": "Severn Trent",
@@ -459,7 +459,7 @@
       "status": "active",
       "notes": "Regional partner for Midlands area",
       "id": 2,
-      "created_at": "2025-04-11T01:58:19.590558"
+      "created_at": "2025-04-15T09:40:27.646515"
     },
     {
       "name": "Yorkshire Water",
@@ -471,7 +471,7 @@
       "status": "active",
       "notes": "Northern region mutual aid partner",
       "id": 3,
-      "created_at": "2025-04-11T01:58:19.591886"
+      "created_at": "2025-04-15T09:40:27.648522"
     },
     {
       "name": "United Utilities",
@@ -483,7 +483,7 @@
       "status": "active",
       "notes": "Northwest region emergency support partner",
       "id": 4,
-      "created_at": "2025-04-11T01:58:19.593019"
+      "created_at": "2025-04-15T09:40:27.649551"
     }
   ],
   "alerts": [
@@ -494,7 +494,7 @@
       "status": "active",
       "target_users": "admin",
       "id": 1,
-      "created_at": "2025-04-11T01:58:19.574239"
+      "created_at": "2025-04-15T09:40:27.629749"
     },
     {
       "title": "Maintenance Reminder",
@@ -503,7 +503,7 @@
       "status": "active",
       "target_users": "maintenance",
       "id": 2,
-      "created_at": "2025-04-11T01:58:19.576250"
+      "created_at": "2025-04-15T09:40:27.630749"
     },
     {
       "title": "Low Water Level",
@@ -512,7 +512,7 @@
       "status": "active",
       "target_users": "all",
       "id": 3,
-      "created_at": "2025-04-11T01:58:19.577537"
+      "created_at": "2025-04-15T09:40:27.631751"
     }
   ]
 }

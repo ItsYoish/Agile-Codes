@@ -1,0 +1,8 @@
+1.) The stay updated function is only a placeholder.
+2.) The entire financial section is spoofed data
+3.) Export as file function is a placeholder
+4.) The Partners and Transactions sections are placeholder buttons
+5.) Reports Analytics are having issues loading data in due to filepath problems
+6.) In the Management Panel "Details", "Edit" are placeholder buttons
+7.) The undeploy button is not working when it should function and change the state in the db and also in the GUI
+8.) Maintinance Management when clicking certain buttons causes the mouse to longer click breaking the website and having to refresh

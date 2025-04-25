@@ -4,10 +4,8 @@
  * Enhanced with modern UI elements and improved functionality
  */
 
-// Using global variables instead of imports for compatibility
-// Previously: import dbHandler from './db-handler.js';
-// Now using dataManager from data.js
-// Previously: import Utils from './utils.js';
+import { DataManager } from './data.js';
+
 class BowserManagement {
     constructor() {
         this.currentTab = 'all';
@@ -15,6 +13,7 @@ class BowserManagement {
         this.filteredBowsers = [];
         this.isLoading = false;
         this.currentBowser = null;
+        this.dataManager = new DataManager();
         
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => this.initialize());
@@ -28,10 +27,10 @@ class BowserManagement {
             this.showLoading(true);
             
             // Load data from the database
-            await dataManager.loadMockData();
+            await this.dataManager.initializeData();
             
             // Get bowsers from the database handler
-            this.bowsers = dataManager.getBowsers();
+            this.bowsers = await this.dataManager.getBowsers();
             this.filteredBowsers = [...this.bowsers];
             
             // Set up event listeners
@@ -289,12 +288,12 @@ class BowserManagement {
             const waterLevel = Math.round((bowser.currentLevel / bowser.capacity) * 100);
             
             // Check if bowser is deployed
-            const deployment = dataManager.getDeploymentByBowserId(bowser.id);
+            const deployment = this.dataManager.getDeploymentByBowserId(bowser.id);
             const isDeployed = deployment !== null;
             card.dataset.isDeployed = isDeployed;
             
             const location = deployment && deployment.locationId ? 
-                dataManager.getLocationById(deployment.locationId)?.name || 'Not assigned' : 'Not assigned';
+                this.dataManager.getLocationById(deployment.locationId)?.name || 'Not assigned' : 'Not assigned';
             
             // Create the HTML structure for the card
             let cardHTML = `
@@ -502,7 +501,7 @@ class BowserManagement {
      */
     showBowserDetails(bowserId) {
         // Find the bowser by ID using the database handler
-        const bowser = dataManager.getBowserById(bowserId);
+        const bowser = this.dataManager.getBowserById(bowserId);
         if (!bowser) {
             this.showToast('Bowser not found', 'error');
             return;
@@ -512,19 +511,19 @@ class BowserManagement {
         this.currentBowser = bowser;
         
         // Get maintenance records for this bowser
-        const maintenanceRecords = dataManager.getMaintenanceRecordsByBowserId(bowserId);
+        const maintenanceRecords = this.dataManager.getMaintenanceRecordsByBowserId(bowserId);
         
         // Find latest maintenance record
         const maintenance = maintenanceRecords && maintenanceRecords.length > 0 ? 
             maintenanceRecords.sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))[0] : null;
         
         // Find active deployment if any
-        const activeDeployment = dataManager.getDeploymentByBowserId(bowserId);
+        const activeDeployment = this.dataManager.getDeploymentByBowserId(bowserId);
         
         // Find location if deployed
         let location = null;
         if (activeDeployment && activeDeployment.locationId) {
-            location = dataManager.getLocationById(activeDeployment.locationId);
+            location = this.dataManager.getLocationById(activeDeployment.locationId);
         }
         
         // Calculate water level percentage
@@ -722,11 +721,11 @@ class BowserManagement {
             // Determine if this is an add or update operation
             if (this.currentBowser) {
                 // Update existing bowser
-                await dataManager.updateBowser(id, bowserData);
+                await this.dataManager.updateBowser(id, bowserData);
                 this.showToast(`Bowser ${id} updated successfully`, 'success');
             } else {
                 // Check if bowser with this ID already exists
-                const existingBowser = dataManager.getBowserById(id);
+                const existingBowser = this.dataManager.getBowserById(id);
                 if (existingBowser) {
                     this.showToast(`Bowser with ID ${id} already exists`, 'error');
                     this.showLoading(false);
@@ -734,7 +733,7 @@ class BowserManagement {
                 }
                 
                 // Add new bowser
-                await dataManager.addBowser(bowserData);
+                await this.dataManager.addBowser(bowserData);
                 this.showToast(`Bowser ${id} added successfully`, 'success');
             }
             
@@ -759,7 +758,7 @@ class BowserManagement {
             this.showLoading(true);
             
             // Get the bowser
-            const bowser = dataManager.getBowserById(bowserId);
+            const bowser = this.dataManager.getBowserById(bowserId);
             if (!bowser) {
                 this.showToast('Bowser not found', 'error');
                 this.showLoading(false);
@@ -767,7 +766,7 @@ class BowserManagement {
             }
             
             // Check if bowser is already deployed
-            const existingDeployment = dataManager.getDeploymentByBowserId(bowserId);
+            const existingDeployment = this.dataManager.getDeploymentByBowserId(bowserId);
             if (existingDeployment) {
                 this.showToast(`Bowser ${bowser.number} is already deployed`, 'warning');
                 return;
@@ -775,7 +774,7 @@ class BowserManagement {
             
             // Get available locations
             
-            const locations = dataManager.getLocations();
+            const locations = this.dataManager.getLocations();
             locations.forEach(location => {
                 const option = document.createElement('option');
                 option.value = location.id;
@@ -807,7 +806,7 @@ class BowserManagement {
             this.showLoading(true);
             
             // Get the bowser
-            const bowser = dataManager.getBowserById(bowserId);
+            const bowser = this.dataManager.getBowserById(bowserId);
             if (!bowser) {
                 this.showToast('Bowser not found', 'error');
                 this.showLoading(false);
@@ -815,7 +814,7 @@ class BowserManagement {
             }
             
             // Get the deployment
-            const deployment = dataManager.getDeploymentByBowserId(bowserId);
+            const deployment = this.dataManager.getDeploymentByBowserId(bowserId);
             if (!deployment) {
                 this.showToast('Bowser is not currently deployed', 'warning');
                 this.showLoading(false);
@@ -825,7 +824,7 @@ class BowserManagement {
             // Get location name for confirmation message
             let locationName = 'its current location';
             if (deployment.locationId) {
-                const location = dataManager.getLocationById(deployment.locationId);
+                const location = this.dataManager.getLocationById(deployment.locationId);
                 if (location) {
                     locationName = location.name;
                 }
@@ -840,11 +839,11 @@ class BowserManagement {
             // End the deployment by updating its status and end date
             deployment.status = 'completed';
             deployment.endDate = new Date().toISOString().split('T')[0]; // Today's date
-            await dataManager.updateDeployment(deployment.id, deployment);
+            await this.dataManager.updateDeployment(deployment.id, deployment);
             
             // Update bowser status to available
             bowser.status = 'available';
-            await dataManager.updateBowser(bowserId, bowser);
+            await this.dataManager.updateBowser(bowserId, bowser);
             
             // Show success message
             this.showToast(`Bowser ${bowser.number} has been successfully undeployed from ${locationName}`, 'success');
@@ -873,7 +872,7 @@ class BowserManagement {
             this.showLoading(true);
             
             // Get the bowser
-            const bowser = dataManager.getBowserById(bowserId);
+            const bowser = this.dataManager.getBowserById(bowserId);
             if (!bowser) {
                 this.showToast('Bowser not found', 'error');
                 this.showLoading(false);
@@ -881,7 +880,7 @@ class BowserManagement {
             }
             
             // Delete the bowser
-            await dataManager.deleteBowser(bowserId);
+            await this.dataManager.deleteBowser(bowserId);
             
             // Close any open modals
             this.closeAllModals();
@@ -954,13 +953,13 @@ class BowserManagement {
             };
             
             // Create deployment
-            await dataManager.createDeployment(deployment);
+            await this.dataManager.createDeployment(deployment);
             
             // Update bowser status
-            const bowser = dataManager.getBowserById(bowserId);
+            const bowser = this.dataManager.getBowserById(bowserId);
             if (bowser) {
                 bowser.status = 'deployed';
-                await dataManager.updateBowser(bowserId, bowser);
+                await this.dataManager.updateBowser(bowserId, bowser);
             }
             
             // Close modal and refresh data

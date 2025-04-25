@@ -77,12 +77,19 @@ html {
 
 body {
     font-family: var(--font-sans);
-    background-color: var(--neutral-200);
+    background-color: #f8f9fa;
     color: var(--neutral-800);
     line-height: 1.6;
-    min-height: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+main {
+    flex: 1;
+    padding: 2rem 0;
 }
 
 /* Typography */
@@ -120,22 +127,22 @@ a:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     position: sticky;
     top: 0;
     z-index: var(--z-nav);
 }
 
-.nav-brand {
+.navbar-brand {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: bold;
     color: var(--neutral-100);
 }
 
-.nav-brand i {
+.navbar-brand i {
     color: var(--primary-lighter);
 }
 
@@ -208,17 +215,17 @@ a:hover {
 }
 
 /* Cards */
-.card {
-    background: var(--neutral-100);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    padding: var(--spacing-lg);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+.dashboard-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
 }
 
-.card:hover {
+.dashboard-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
 }
 
 /* Forms */
@@ -382,11 +389,38 @@ a:hover {
 /* Map Container */
 .map-container {
     grid-row: span 2;
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    padding: var(--spacing-lg);
 }
 
 #map {
     height: 500px;
+    width: 100%;
     border-radius: var(--radius-sm);
+    z-index: 1;
+}
+
+/* Ensure proper z-index stacking for map controls */
+.leaflet-top,
+.leaflet-bottom {
+    z-index: 2;
+}
+
+.leaflet-container {
+    font: inherit;
+}
+
+/* Map popup styling */
+.leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.leaflet-popup-content {
+    margin: 16px;
 }
 
 /* List Styles */
@@ -613,6 +647,11 @@ a:hover {
     h2 {
         font-size: 1.25rem;
     }
+
+    .auth-container {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
 }
 
 /* Touch Device Optimizations */
@@ -640,4 +679,59 @@ a:hover {
     .stat-info p {
         font-size: 1.5rem;
     }
+}
+
+/* Auth Forms */
+.auth-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-container h2 {
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #333;
+}
+
+.auth-container .form-group {
+    margin-bottom: 1rem;
+}
+
+.auth-container .btn-primary {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+}
+
+/* Flash Messages */
+.alert {
+    margin: 1rem 0;
+    border-radius: 4px;
+}
+
+/* Custom Navbar Styles */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
 }

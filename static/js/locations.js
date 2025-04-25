@@ -50,31 +50,19 @@ class LocationManager {
             });
         }
 
-        // Add location modal
+        // Add location button
         const addLocationBtn = document.getElementById('addLocationBtn');
-        const addLocationModal = document.getElementById('addLocationModal');
-        const closeModalBtns = document.querySelectorAll('.close-modal, .cancel-btn');
-
-        if (addLocationBtn && addLocationModal) {
+        if (addLocationBtn) {
             addLocationBtn.addEventListener('click', () => {
-                addLocationModal.style.display = 'block';
+                const modal = new bootstrap.Modal(document.getElementById('addLocationModal'));
+                modal.show();
             });
         }
 
-        if (closeModalBtns.length > 0) {
-            closeModalBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (addLocationModal) {
-                        addLocationModal.style.display = 'none';
-                    }
-                });
-            });
-        }
-
-        // Add location form submission
-        const addLocationForm = document.getElementById('addLocationForm');
-        if (addLocationForm) {
-            addLocationForm.addEventListener('submit', (e) => {
+        // Submit location form
+        const submitLocationBtn = document.getElementById('submitLocationBtn');
+        if (submitLocationBtn) {
+            submitLocationBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.addNewLocation();
             });
@@ -258,27 +246,42 @@ class LocationManager {
         this.currentView = view;
     }
 
-    addNewLocation() {
+    async addNewLocation() {
         const form = document.getElementById('addLocationForm');
         const newLocation = {
-            id: Date.now().toString(),
-            name: form.locationName.value,
-            type: form.locationType.value,
-            address: form.locationAddress.value,
-            priority: form.locationPriority.value,
-            notes: form.locationNotes.value,
-            coordinates: { lat: 51.505, lng: -0.09 }, // Default coordinates for demo
+            name: form.querySelector('#locationName').value,
+            type: form.querySelector('#locationType').value,
+            address: form.querySelector('#locationAddress').value,
+            latitude: 51.505, // Default coordinates for demo
+            longitude: -0.09, // Default coordinates for demo
             status: 'active'
         };
 
-        // Add to database
-        this.dataManager.addLocation(newLocation);
+        try {
+            const response = await fetch('/api/locations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newLocation)
+            });
 
-        // Update UI
-        this.loadLocations();
-        document.getElementById('addLocationModal').style.display = 'none';
-        form.reset();
-        this.showNotification('Location added successfully', 'success');
+            if (!response.ok) {
+                throw new Error('Failed to add location');
+            }
+
+            const result = await response.json();
+            
+            // Update UI
+            await this.loadLocations();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addLocationModal'));
+            modal.hide();
+            form.reset();
+            this.showNotification('Location added successfully', 'success');
+        } catch (error) {
+            console.error('Error adding location:', error);
+            this.showNotification('Error adding location: ' + error.message, 'error');
+        }
     }
 
     async viewLocationDetails(locationId) {

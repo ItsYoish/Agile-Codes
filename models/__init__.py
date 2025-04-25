@@ -3,3 +3,4 @@
 
 from .json_models import JSONDataHandler, json_handler
 from .mutual_aid_models import MutualAidScheme, MutualAidContribution
+from .sql_models import Bowser, Location, Maintenance, Deployment, Invoice, Partner

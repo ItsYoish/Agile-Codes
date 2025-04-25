@@ -3,6 +3,8 @@ import os
 import json
 from datetime import datetime
 import sys
+from app import create_app, db
+from models import User, Location, Bowser, Deployment, Maintenance, Alert
 
 # Function to serialize datetime objects for JSON
 def json_serial(obj):
@@ -146,6 +148,42 @@ def reset_database():
         print("Please restart your Flask application to recreate the database schema.")
     except sqlite3.Error as e:
         print(f"Error resetting database: {e}")
+
+def init_db():
+    """Initialize the database with sample data."""
+    app = create_app()
+    with app.app_context():
+        # Create the instance directory if it doesn't exist
+        os.makedirs(app.instance_path, exist_ok=True)
+        
+        # Create all tables
+        db.create_all()
+        
+        # Check if we need to add sample data
+        if not User.query.first():
+            # Add sample data
+            admin = User(username='admin', role='admin')
+            admin.set_password('admin123')
+            db.session.add(admin)
+            
+            # Add sample locations
+            locations = [
+                Location(name='Location 1', type='residential', latitude=-26.2041, longitude=28.0473),
+                Location(name='Location 2', type='commercial', latitude=-26.2042, longitude=28.0474)
+            ]
+            db.session.add_all(locations)
+            
+            # Add sample bowsers
+            bowsers = [
+                Bowser(number='B001', capacity=1000, status='available'),
+                Bowser(number='B002', capacity=2000, status='maintenance')
+            ]
+            db.session.add_all(bowsers)
+            
+            db.session.commit()
+            print("Database initialized with sample data.")
+        else:
+            print("Database already contains data.")
 
 # Main execution
 if __name__ == "__main__":

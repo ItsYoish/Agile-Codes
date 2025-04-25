@@ -4,100 +4,164 @@
  * Supports both module and non-module usage patterns
  */
 
-class DatabaseHandler {
+export class DBHandler {
     constructor() {
+        this.baseUrl = '/api';
         this.data = {
             bowsers: [],
             locations: [],
             maintenance: [],
-            deployments: []
+            deployments: [],
+            users: [],
+            alerts: []
         };
         this.dataLoaded = false;
-        this.API_BASE_URL = '/api';
         // Set to false to use real API endpoints
         this.useMockData = false;
+        
+        // Don't initialize data in constructor
+        // Let the consumer call initializeData() when ready
     }
 
     /**
-     * Load data from API endpoints
-     * @returns {Promise} Promise that resolves when data is loaded
+     * Initialize data by loading from API
      */
-    async loadData() {
-        
+    async initializeData() {
         try {
-            // Load bowsers from API
-            const bowserResponse = await fetch(`${this.API_BASE_URL}/bowsers`);
-            if (!bowserResponse.ok) {
-                throw new Error(`Failed to load bowsers: ${bowserResponse.statusText}`);
-            }
-            this.data.bowsers = await bowserResponse.json();
-            
-            // Load locations from API
-            try {
-                const locationResponse = await fetch(`${this.API_BASE_URL}/locations`);
-                if (locationResponse.ok) {
-                    this.data.locations = await locationResponse.json();
-                }
-            } catch (e) {
-                console.warn('Could not load locations:', e);
-                this.data.locations = [];
-            }
-            
-            // Load maintenance records from API
-            try {
-                const maintenanceResponse = await fetch(`${this.API_BASE_URL}/maintenance`);
-                if (maintenanceResponse.ok) {
-                    this.data.maintenance = await maintenanceResponse.json();
-                }
-            } catch (e) {
-                console.warn('Could not load maintenance records:', e);
-                this.data.maintenance = [];
-            }
-            
+            console.log('Initializing DBHandler data...');
+            const [bowsers, locations, maintenance, deployments, users, alerts] = await Promise.all([
+                this.loadBowsers(),
+                this.loadLocations(),
+                this.loadMaintenance(),
+                this.loadDeployments(),
+                this.loadUsers(),
+                this.loadAlerts()
+            ]);
+
+            this.data = {
+                bowsers: bowsers || [],
+                locations: locations || [],
+                maintenance: maintenance || [],
+                deployments: deployments || [],
+                users: users || [],
+                alerts: alerts || []
+            };
+
             this.dataLoaded = true;
-            console.log('Database loaded successfully from API');
+            console.log('DBHandler data initialized successfully:', this.data);
             return this.data;
         } catch (error) {
-            console.error('Error loading database from API:', error);
-            // Fallback to mock data if API fails
-            console.log('Falling back to mock data');
-            // Load mock data if it exists in the global scope
-            if (typeof mockBowsers !== 'undefined') {
-                this.data.bowsers = mockBowsers;
-            }
-            if (typeof mockLocations !== 'undefined') {
-                this.data.locations = mockLocations;
-            }
-            if (typeof mockMaintenanceRecords !== 'undefined') {
-                this.data.maintenance = mockMaintenanceRecords;
-            }
-            if (typeof mockDeployments !== 'undefined') {
-                this.data.deployments = mockDeployments;
-            }
-            this.dataLoaded = true;
-            return this.data;
+            console.error('Error initializing DBHandler data:', error);
+            throw error;
         }
     }
-    
+
     /**
-     * No need to explicitly save data with API
-     * This method is kept for backward compatibility
-     * @returns {Promise} Always resolves to true
+     * Load bowsers from API
      */
-    async saveData() {
-        // Data is saved via individual API calls (add/update/delete methods)
-        return true;
+    async loadBowsers() {
+        try {
+            console.log('Loading bowsers from API...');
+            const response = await this.request('/bowsers');
+            // Handle both array and { data: [...] } formats
+            const data = Array.isArray(response) ? response : response.data;
+            console.log('Bowsers loaded successfully:', data);
+            return data;
+        } catch (error) {
+            console.error('Error loading bowsers:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Load locations from API
+     */
+    async loadLocations() {
+        try {
+            console.log('Loading locations from API...');
+            const response = await this.request('/locations');
+            const data = Array.isArray(response) ? response : response.data;
+            console.log('Locations loaded successfully:', data);
+            return data;
+        } catch (error) {
+            console.error('Error loading locations:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Load maintenance records from API
+     */
+    async loadMaintenance() {
+        try {
+            console.log('Loading maintenance from API...');
+            const response = await this.request('/maintenance');
+            const data = Array.isArray(response) ? response : response.data;
+            console.log('Maintenance loaded successfully:', data);
+            return data;
+        } catch (error) {
+            console.error('Error loading maintenance:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Load deployments from API
+     */
+    async loadDeployments() {
+        try {
+            console.log('Loading deployments from API...');
+            const response = await this.request('/deployments');
+            const data = Array.isArray(response) ? response : response.data;
+            console.log('Deployments loaded successfully:', data);
+            return data;
+        } catch (error) {
+            console.error('Error loading deployments:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Load users from API
+     */
+    async loadUsers() {
+        try {
+            console.log('Loading users from API...');
+            const response = await this.request('/users');
+            const data = Array.isArray(response) ? response : response.data;
+            console.log('Users loaded successfully:', data);
+            return data;
+        } catch (error) {
+            console.error('Error loading users:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Load alerts from API
+     */
+    async loadAlerts() {
+        try {
+            console.log('Loading alerts from API...');
+            const response = await this.request('/alerts');
+            const data = Array.isArray(response) ? response : response.data;
+            console.log('Alerts loaded successfully:', data);
+            return data;
+        } catch (error) {
+            console.error('Error loading alerts:', error);
+            return [];
+        }
     }
 
     /**
      * Get all bowsers
      * @returns {Array} Array of bowsers
      */
-    getBowsers() {
+    async getBowsers() {
         if (!this.dataLoaded) {
-            throw new Error('Database not loaded');
+            return this.loadBowsers();
         }
-        return this.data.bowsers;
+        return this.data.bowsers || [];
     }
 
     /**
@@ -105,7 +169,7 @@ class DatabaseHandler {
      * @param {string} id Bowser ID
      * @returns {Object} Bowser object
      */
-    getBowserById(id) {
+    async getBowser(id) {
         if (!this.dataLoaded) {
             throw new Error('Database not loaded');
         }
@@ -117,13 +181,13 @@ class DatabaseHandler {
      * @param {Object} bowser Bowser object
      * @returns {Object} Added bowser with generated ID
      */
-    async addBowser(bowser) {
+    async createBowser(bowser) {
         if (!this.dataLoaded) {
             throw new Error('Database not loaded');
         }
         
         try {
-            const response = await fetch(`${this.API_BASE_URL}/bowsers`, {
+            const response = await fetch(`${this.baseUrl}/bowsers`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -162,7 +226,7 @@ class DatabaseHandler {
         }
         
         try {
-            const response = await fetch(`${this.API_BASE_URL}/bowsers/${id}`, {
+            const response = await fetch(`${this.baseUrl}/bowsers/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -198,7 +262,7 @@ class DatabaseHandler {
         }
         
         try {
-            const response = await fetch(`${this.API_BASE_URL}/bowsers/${id}`, {
+            const response = await fetch(`${this.baseUrl}/bowsers/${id}`, {
                 method: 'DELETE'
             });
             
@@ -223,11 +287,11 @@ class DatabaseHandler {
      * Get all locations
      * @returns {Array} Array of locations
      */
-    getLocations() {
+    async getLocations() {
         if (!this.dataLoaded) {
-            throw new Error('Database not loaded');
+            return this.loadLocations();
         }
-        return this.data.locations;
+        return this.data.locations || [];
     }
 
     /**
@@ -235,14 +299,14 @@ class DatabaseHandler {
      * @param {string} id Location ID
      * @returns {Object} Location object
      */
-    async getLocationById(id) {
+    async getLocation(id) {
         if (!this.dataLoaded) {
             throw new Error('Database not loaded');
         }
         
         try {
             // Try to fetch from API first
-            const response = await fetch(`${this.API_BASE_URL}/locations/${id}`);
+            const response = await fetch(`${this.baseUrl}/locations/${id}`);
             if (response.ok) {
                 return await response.json();
             }
@@ -259,13 +323,13 @@ class DatabaseHandler {
      * @param {Object} location Location object
      * @returns {Object} Added location with generated ID
      */
-    async addLocation(location) {
+    async createLocation(location) {
         if (!this.dataLoaded) {
             throw new Error('Database not loaded');
         }
         
         try {
-            const response = await fetch(`${this.API_BASE_URL}/locations`, {
+            const response = await fetch(`${this.baseUrl}/locations`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -304,7 +368,7 @@ class DatabaseHandler {
         }
         
         try {
-            const response = await fetch(`${this.API_BASE_URL}/locations/${id}`, {
+            const response = await fetch(`${this.baseUrl}/locations/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -340,7 +404,7 @@ class DatabaseHandler {
         }
         
         try {
-            const response = await fetch(`${this.API_BASE_URL}/locations/${id}`, {
+            const response = await fetch(`${this.baseUrl}/locations/${id}`, {
                 method: 'DELETE'
             });
             
@@ -365,11 +429,11 @@ class DatabaseHandler {
      * Get all maintenance records
      * @returns {Array} Array of maintenance records
      */
-    getMaintenanceRecords() {
+    async getMaintenance() {
         if (!this.dataLoaded) {
-            throw new Error('Database not loaded');
+            return this.loadMaintenance();
         }
-        return this.data.maintenance;
+        return this.data.maintenance || [];
     }
 
     /**
@@ -377,7 +441,7 @@ class DatabaseHandler {
      * @param {string} bowserId Bowser ID
      * @returns {Array} Array of maintenance records
      */
-    getMaintenanceRecordsByBowserId(bowserId) {
+    async getMaintenanceRecordsByBowserId(bowserId) {
         if (!this.dataLoaded) {
             throw new Error('Database not loaded');
         }
@@ -396,7 +460,7 @@ class DatabaseHandler {
         
         try {
             // Try to fetch from API first
-            const response = await fetch(`${this.API_BASE_URL}/maintenance/${id}`);
+            const response = await fetch(`${this.baseUrl}/maintenance/${id}`);
             if (response.ok) {
                 return await response.json();
             }
@@ -414,13 +478,13 @@ class DatabaseHandler {
      * @param {Object} updatedData Updated maintenance record data
      * @returns {Object} Updated maintenance record
      */
-    async updateMaintenanceRecord(id, updatedData) {
+    async updateMaintenance(id, updatedData) {
         if (!this.dataLoaded) {
             throw new Error('Database not loaded');
         }
         
         try {
-            const response = await fetch(`${this.API_BASE_URL}/maintenance/${id}`, {
+            const response = await fetch(`${this.baseUrl}/maintenance/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -450,13 +514,13 @@ class DatabaseHandler {
      * @param {string} id Maintenance record ID
      * @returns {boolean} True if deleted successfully
      */
-    async deleteMaintenanceRecord(id) {
+    async deleteMaintenance(id) {
         if (!this.dataLoaded) {
             throw new Error('Database not loaded');
         }
         
         try {
-            const response = await fetch(`${this.API_BASE_URL}/maintenance/${id}`, {
+            const response = await fetch(`${this.baseUrl}/maintenance/${id}`, {
                 method: 'DELETE'
             });
             
@@ -480,21 +544,9 @@ class DatabaseHandler {
      */
     async getDeployments() {
         if (!this.dataLoaded) {
-            throw new Error('Database not loaded');
+            return this.loadDeployments();
         }
-        
-        try {
-            const response = await fetch(`${this.API_BASE_URL}/deployments`);
-            if (response.ok) {
-                return await response.json();
-            }
-            
-            // Fallback to local cache
-            return this.data.deployments;
-        } catch (error) {
-            console.warn('Error getting deployments:', error);
-            return this.data.deployments;
-        }
+        return this.data.deployments || [];
     }
     
     /**
@@ -509,7 +561,7 @@ class DatabaseHandler {
         
         try {
             // Try to get deployment from API first
-            const response = await fetch(`${this.API_BASE_URL}/deployments`);
+            const response = await fetch(`${this.baseUrl}/deployments`);
             if (response.ok) {
                 const deployments = await response.json();
                 return deployments.find(dep => dep.bowserId === bowserId);
@@ -552,7 +604,7 @@ class DatabaseHandler {
         try {
             
             // For real API implementation
-            const response = await fetch(`${this.API_BASE_URL}/deployments`, {
+            const response = await fetch(`${this.baseUrl}/deployments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -578,20 +630,9 @@ class DatabaseHandler {
      */
     async getAlerts() {
         if (!this.dataLoaded) {
-            throw new Error('Database not loaded');
+            return this.loadAlerts();
         }
-        
-        try {
-            const response = await fetch(`${this.API_BASE_URL}/alerts`);
-            if (response.ok) {
-                return await response.json();
-            }
-            
-            return [];
-        } catch (error) {
-            console.warn('Error getting alerts:', error);
-            return [];
-        }
+        return this.data.alerts || [];
     }
     
     /**
@@ -600,7 +641,7 @@ class DatabaseHandler {
      * @param {Object} updatedData Updated deployment data
      * @returns {Object} Updated deployment
      */
-    async updateDeployment(deploymentId, updatedData) {
+    async updateDeployment(id, updatedData) {
         if (!this.dataLoaded) {
             throw new Error('Database not loaded');
         }
@@ -608,9 +649,9 @@ class DatabaseHandler {
         try {
             // In development mode, update local array
             if (this.useMockData) {
-                const index = this.data.deployments.findIndex(d => d.id === deploymentId);
+                const index = this.data.deployments.findIndex(d => d.id === id);
                 if (index === -1) {
-                    throw new Error(`Deployment with ID ${deploymentId} not found`);
+                    throw new Error(`Deployment with ID ${id} not found`);
                 }
                 
                 // Update the deployment with new data
@@ -623,7 +664,7 @@ class DatabaseHandler {
             }
             
             // For real API implementation
-            const response = await fetch(`${this.API_BASE_URL}/deployments/${deploymentId}`, {
+            const response = await fetch(`${this.baseUrl}/deployments/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -668,7 +709,7 @@ class DatabaseHandler {
             });
             
             // Update bowser status back to active
-            const bowser = this.getBowserById(deployment.bowserId);
+            const bowser = this.getBowser(deployment.bowserId);
             if (bowser) {
                 bowser.status = 'active';
                 await this.updateBowser(bowser.id, bowser);
@@ -688,18 +729,18 @@ class DatabaseHandler {
      * @param {Object} record Maintenance record
      * @returns {Object} Added maintenance record with generated ID
      */
-    async addMaintenanceRecord(record) {
+    async createMaintenance(maintenance) {
         if (!this.dataLoaded) {
             throw new Error('Database not loaded');
         }
         
         try {
-            const response = await fetch(`${this.API_BASE_URL}/maintenance`, {
+            const response = await fetch(`${this.baseUrl}/maintenance`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(record)
+                body: JSON.stringify(maintenance)
             });
             
             if (!response.ok) {
@@ -709,12 +750,12 @@ class DatabaseHandler {
             const result = await response.json();
             
             // Add to local cache
-            if (!record.id) {
-                record.id = result.id;
+            if (!maintenance.id) {
+                maintenance.id = result.id;
             }
-            this.data.maintenance.push(record);
+            this.data.maintenance.push(maintenance);
             
-            return record;
+            return maintenance;
         } catch (error) {
             console.error('Error adding maintenance record:', error);
             throw error;
@@ -731,10 +772,83 @@ class DatabaseHandler {
         const random = Math.floor(Math.random() * 10000);
         return `${prefix}${timestamp}${random}`;
     }
+
+    /**
+     * Make an API request
+     * @param {string} endpoint - API endpoint
+     * @param {string} method - HTTP method
+     * @param {Object} data - Request data
+     * @returns {Promise} API response
+     */
+    async request(endpoint, method = 'GET', data = null) {
+        try {
+            const url = `${this.baseUrl}${endpoint}`;
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCsrfToken()
+                },
+                credentials: 'include'
+            };
+
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+
+            console.log(`Making ${method} request to ${url}`, options);
+            const response = await fetch(url, options);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log(`Response from ${url}:`, result);
+
+            if (result.status === 'error') {
+                throw new Error(result.message);
+            }
+
+            return result;
+        } catch (error) {
+            console.error(`Error in ${method} request to ${endpoint}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get CSRF token from cookie
+     * @returns {string} CSRF token
+     */
+    getCsrfToken() {
+        const token = document.querySelector('meta[name="csrf-token"]');
+        return token ? token.getAttribute('content') : '';
+    }
+
+    /**
+     * Get all users
+     * @returns {Array} Array of users
+     */
+    async getUsers() {
+        if (!this.dataLoaded) {
+            return this.loadUsers();
+        }
+        return this.data.users || [];
+    }
+
+    /**
+     * Get active deployments
+     * @returns {Array} Array of active deployments
+     */
+    async getActiveDeployments() {
+        const deployments = await this.getDeployments();
+        return Array.isArray(deployments) ? deployments.filter(d => d.status === 'active') : [];
+    }
 }
 
 // Initialize the database handler
-const dbHandler = new DatabaseHandler();
+const dbHandler = new DBHandler();
 
 // Support both module (import/export) and non-module (global variable) usage
 try {
